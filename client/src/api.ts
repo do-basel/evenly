@@ -67,6 +67,19 @@ export const api = {
       headers: { 'X-Member-Token': memberToken },
     }),
 
+  renameEvent: (inviteCode: string, memberToken: string, name: string) =>
+    req(`/api/events/${inviteCode}`, {
+      method: 'PATCH',
+      headers: { 'X-Member-Token': memberToken },
+      body: JSON.stringify({ name }),
+    }),
+
+  removeMember: (inviteCode: string, memberToken: string, memberId: string) =>
+    req(`/api/events/${inviteCode}/members/${memberId}`, {
+      method: 'DELETE',
+      headers: { 'X-Member-Token': memberToken },
+    }),
+
   getSettlement: (inviteCode: string) =>
     req(`/api/events/${inviteCode}/settlements`),
 

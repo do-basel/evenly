@@ -56,4 +56,37 @@ router.get('/:inviteCode', async (req: Request, res: Response) => {
   res.json({ ...event, members, expenses: expensesWithSplits, balances, settlement });
 });
 
+// PATCH /api/events/:inviteCode — rename trip (any member with valid token)
+router.patch('/:inviteCode', async (req: Request, res: Response) => {
+  const memberToken = req.headers['x-member-token'] as string;
+  if (!memberToken) { res.status(401).json({ error: 'غير مصرح' }); return; }
+
+  const event = await db('events').where({ invite_code: req.params.inviteCode }).first();
+  if (!event) { res.status(404).json({ error: 'Event not found' }); return; }
+
+  const member = await db('members').where({ member_token: memberToken, event_id: event.id }).first();
+  if (!member) { res.status(403).json({ error: 'غير مصرح' }); return; }
+
+  const { name } = req.body;
+  if (!name?.trim()) { res.status(400).json({ error: 'اسم الرحلة مطلوب' }); return; }
+
+  const [updated] = await db('events').where({ id: event.id }).update({ name: name.trim() }).returning('*');
+  res.json(updated);
+});
+
+// DELETE /api/events/:inviteCode/members/:memberId — remove member (creator only)
+router.delete('/:inviteCode/members/:memberId', async (req: Request, res: Response) => {
+  const memberToken = req.headers['x-member-token'] as string;
+  if (!memberToken) { res.status(401).json({ error: 'غير مصرح' }); return; }
+
+  const event = await db('events').where({ invite_code: req.params.inviteCode }).first();
+  if (!event) { res.status(404).json({ error: 'Event not found' }); return; }
+
+  const requester = await db('members').where({ member_token: memberToken, event_id: event.id }).first();
+  if (!requester) { res.status(403).json({ error: 'غير مصرح' }); return; }
+
+  await db('members').where({ id: req.params.memberId, event_id: event.id }).delete();
+  res.json({ ok: true });
+});
+
 export default router;

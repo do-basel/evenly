@@ -51,6 +51,7 @@ export default function CreateTrip({ lang: _lang, s, dir, onBack, onCreated }: P
         memberName: joined.name,
         currency: event.currency,
         createdAt: event.created_at,
+        isCreator: true,
       });
       onCreated(event.invite_code, event.name);
     } catch (e: any) {

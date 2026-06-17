@@ -8,6 +8,7 @@ import Join from './screens/Join';
 import AddExpense from './screens/AddExpense';
 import Settlement from './screens/Settlement';
 import Settings from './screens/Settings';
+import TripSettings from './screens/TripSettings';
 import { getAuth, clearAuth } from './storage';
 import { t } from './i18n';
 import type { Lang } from './i18n';
@@ -22,7 +23,8 @@ export type Screen =
   | { name: 'join'; inviteCode: string }
   | { name: 'addexpense'; inviteCode: string; event: Event }
   | { name: 'settlement'; inviteCode: string; event: Event }
-  | { name: 'settings' };
+  | { name: 'settings' }
+  | { name: 'tripsettings'; inviteCode: string; event: import('./types').Event };
 
 function detectInitialScreen(): Screen {
   const path = window.location.pathname;
@@ -90,6 +92,18 @@ export default function App() {
           onBack={() => go({ name: 'trips' })}
           onAddExpense={(event) => go({ name: 'addexpense', inviteCode: screen.inviteCode, event })}
           onSettlement={(event) => go({ name: 'settlement', inviteCode: screen.inviteCode, event })}
+          onTripSettings={(event) => go({ name: 'tripsettings', inviteCode: screen.inviteCode, event })}
+        />
+      );
+
+    case 'tripsettings':
+      return (
+        <TripSettings
+          s={s} dir={dir}
+          inviteCode={screen.inviteCode}
+          event={screen.event}
+          onBack={() => go({ name: 'event', inviteCode: screen.inviteCode })}
+          onRenamed={() => go({ name: 'event', inviteCode: screen.inviteCode })}
         />
       );
 

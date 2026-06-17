@@ -12,6 +12,7 @@ interface Props {
   onBack: () => void;
   onAddExpense: (event: Event) => void;
   onSettlement: (event: Event) => void;
+  onTripSettings: (event: Event) => void;
 }
 
 function Avatar({ name, size = 36 }: { name: string; size?: number }) {
@@ -22,10 +23,11 @@ function Avatar({ name, size = 36 }: { name: string; size?: number }) {
   );
 }
 
-export default function EventHome({ lang: _lang, s, dir, inviteCode, onBack, onAddExpense, onSettlement }: Props) {
+export default function EventHome({ lang: _lang, s, dir, inviteCode, onBack, onAddExpense, onSettlement, onTripSettings }: Props) {
   const [event, setEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [copiedLink, setCopiedLink] = useState(false);
   const membership = getMembership(inviteCode);
 
   const load = useCallback(async () => {
@@ -84,11 +86,23 @@ export default function EventHome({ lang: _lang, s, dir, inviteCode, onBack, onA
             <div style={{ fontSize: 12, color: 'var(--sub)', fontWeight: 600, marginTop: 1 }}>{event.members.length} {s.persons} · {event.currency}</div>
           </div>
           <button
-            onClick={() => navigator.clipboard.writeText(shareLink).catch(() => {})}
-            style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--chip)', border: '1px solid var(--line)', fontSize: 15, cursor: 'pointer', color: 'var(--accent)', flexShrink: 0 }}
+            onClick={() => {
+              navigator.clipboard.writeText(shareLink).catch(() => {});
+              setCopiedLink(true);
+              setTimeout(() => setCopiedLink(false), 2000);
+            }}
+            style={{ width: 32, height: 32, borderRadius: '50%', background: copiedLink ? 'var(--positive)' : 'var(--chip)', border: '1px solid var(--line)', fontSize: 13, fontWeight: 700, cursor: 'pointer', color: copiedLink ? '#fff' : 'var(--accent)', flexShrink: 0 }}
           >
-            🔗
+            {copiedLink ? '✓' : '🔗'}
           </button>
+          {membership?.isCreator && (
+            <button
+              onClick={() => onTripSettings(event)}
+              style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--chip)', border: '1px solid var(--line)', fontSize: 15, cursor: 'pointer', color: 'var(--ink)', flexShrink: 0 }}
+            >
+              ⚙
+            </button>
+          )}
         </div>
 
         {myBalance && (

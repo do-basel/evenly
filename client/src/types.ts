@@ -63,4 +63,5 @@ export interface StoredMembership {
   memberName: string;
   currency: string;
   createdAt: string;
+  isCreator?: boolean;
 }
