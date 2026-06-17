@@ -23,6 +23,9 @@ export default function AddExpense({ lang: _lang, s, dir, inviteCode, event, onB
   const [amountStr, setAmountStr] = useState('');
   const [paidBy, setPaidBy] = useState(membership?.memberId ?? event.members[0]?.id ?? '');
   const [splitType, setSplitType] = useState<SplitType>('equal');
+  const [selectedForEqual, setSelectedForEqual] = useState<Set<string>>(
+    () => new Set(event.members.map((m) => m.id))
+  );
   const [overrides, setOverrides] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -34,7 +37,16 @@ export default function AddExpense({ lang: _lang, s, dir, inviteCode, event, onB
     if (!amountStr || amountCents <= 0) { setError(s.amount); return; }
     if (!membership) return;
 
-    const participants = event.members.map((m) => ({
+    const activeMembers = splitType === 'equal'
+      ? event.members.filter((m) => selectedForEqual.has(m.id))
+      : event.members;
+
+    if (splitType === 'equal' && activeMembers.length === 0) {
+      setError(dir === 'rtl' ? 'اختر عضواً واحداً على الأقل' : 'Select at least one member');
+      return;
+    }
+
+    const participants = activeMembers.map((m) => ({
       memberId: m.id,
       shareValue: splitType === 'equal' ? 1 : Number(overrides[m.id] ?? 0),
     }));
@@ -124,6 +136,46 @@ export default function AddExpense({ lang: _lang, s, dir, inviteCode, event, onB
             </button>
           ))}
         </div>
+
+        {splitType === 'equal' && (
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--sub)', marginBottom: 10 }}>
+              {dir === 'rtl' ? 'الأعضاء المشاركون' : 'Participants'}
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {event.members.map((m) => {
+                const selected = selectedForEqual.has(m.id);
+                return (
+                  <button
+                    key={m.id}
+                    onClick={() => {
+                      setSelectedForEqual((prev) => {
+                        const next = new Set(prev);
+                        if (next.has(m.id)) { next.delete(m.id); } else { next.add(m.id); }
+                        return next;
+                      });
+                    }}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 6,
+                      background: selected ? 'var(--accent)' : 'var(--chip)',
+                      color: selected ? '#fff' : 'var(--ink)',
+                      border: selected ? 'none' : '1px solid var(--line)',
+                      borderRadius: 100, padding: '7px 14px 7px 10px',
+                      fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                      fontFamily: 'var(--font-body)',
+                    }}
+                  >
+                    <div style={{ width: 22, height: 22, borderRadius: '50%', background: selected ? 'rgba(255,255,255,0.3)' : 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700 }}>
+                      {m.name[0]}
+                    </div>
+                    {m.name}
+                    {m.id === membership?.memberId ? ` (${s.you})` : ''}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {splitType !== 'equal' && (
           <div style={{ marginBottom: 20 }}>

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '../api';
-import { getMembership, formatCurrency } from '../storage';
+import { getMembership, getMemberships, formatCurrency } from '../storage';
 import type { Event, ExpenseWithSplits } from '../types';
 import type { Lang, Strings } from '../i18n';
 
@@ -34,6 +34,14 @@ export default function EventHome({ lang: _lang, s, dir, inviteCode, onBack, onA
     try {
       const e = await api.getEvent(inviteCode) as Event;
       setEvent(e);
+      // Sync trip photo to localStorage so MyTrips can display it
+      if (e.photo_url !== undefined) {
+        const all = getMemberships();
+        const updated = all.map((m) =>
+          m.inviteCode === inviteCode ? { ...m, tripPhotoUrl: e.photo_url } : m
+        );
+        localStorage.setItem('evenly_memberships', JSON.stringify(updated));
+      }
     } catch { /* keep stale */ }
     finally { setLoading(false); }
   }, [inviteCode]);

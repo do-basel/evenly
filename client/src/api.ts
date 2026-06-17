@@ -74,6 +74,13 @@ export const api = {
       body: JSON.stringify({ name }),
     }),
 
+  updateTripPhoto: (inviteCode: string, memberToken: string, photo_url: string | null) =>
+    req(`/api/events/${inviteCode}`, {
+      method: 'PATCH',
+      headers: { 'X-Member-Token': memberToken },
+      body: JSON.stringify({ photo_url }),
+    }),
+
   removeMember: (inviteCode: string, memberToken: string, memberId: string) =>
     req(`/api/events/${inviteCode}/members/${memberId}`, {
       method: 'DELETE',

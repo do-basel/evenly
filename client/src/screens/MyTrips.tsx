@@ -72,8 +72,10 @@ export default function MyTrips({ lang: _lang, s, dir, onCreateTrip, onOpenTrip,
                 padding: 13, cursor: 'pointer', marginBottom: 12,
               }}
             >
-              <div style={{ width: 54, height: 54, borderRadius: 'var(--r-card)', background: TRIP_COLORS[i % TRIP_COLORS.length], flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24 }}>
-                {TRIP_EMOJIS[i % TRIP_EMOJIS.length]}
+              <div style={{ width: 54, height: 54, borderRadius: 'var(--r-card)', background: TRIP_COLORS[i % TRIP_COLORS.length], flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, overflow: 'hidden' }}>
+                {m.tripPhotoUrl
+                  ? <img src={m.tripPhotoUrl} alt={m.eventName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  : TRIP_EMOJIS[i % TRIP_EMOJIS.length]}
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 16.5, fontWeight: 800 }}>{m.eventName}</div>

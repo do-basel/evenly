@@ -3,6 +3,7 @@ export interface Event {
   name: string;
   invite_code: string;
   currency: string;
+  photo_url?: string | null;
   created_at: string;
   members: Member[];
   expenses: ExpenseWithSplits[];
@@ -64,4 +65,5 @@ export interface StoredMembership {
   currency: string;
   createdAt: string;
   isCreator?: boolean;
+  tripPhotoUrl?: string | null;
 }

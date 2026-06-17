@@ -26,7 +26,8 @@ router.get('/:inviteCode', async (req: Request, res: Response) => {
 
   const members = await db('members')
     .where({ event_id: event.id })
-    .select('id', 'name', 'photo_url', 'created_at');
+    .select('id', 'name', 'photo_url', 'created_at')
+    .orderBy('created_at', 'asc');
 
   const expenses = await db('expenses')
     .where({ event_id: event.id })
@@ -67,10 +68,14 @@ router.patch('/:inviteCode', async (req: Request, res: Response) => {
   const member = await db('members').where({ member_token: memberToken, event_id: event.id }).first();
   if (!member) { res.status(403).json({ error: 'غير مصرح' }); return; }
 
-  const { name } = req.body;
-  if (!name?.trim()) { res.status(400).json({ error: 'اسم الرحلة مطلوب' }); return; }
+  const { name, photo_url } = req.body;
+  if (!name?.trim() && photo_url === undefined) { res.status(400).json({ error: 'لا توجد تغييرات' }); return; }
 
-  const [updated] = await db('events').where({ id: event.id }).update({ name: name.trim() }).returning('*');
+  const updates: Record<string, string | null> = {};
+  if (name?.trim()) updates.name = name.trim();
+  if (photo_url !== undefined) updates.photo_url = photo_url;
+
+  const [updated] = await db('events').where({ id: event.id }).update(updates).returning('*');
   res.json(updated);
 });
 
