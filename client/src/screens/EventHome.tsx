@@ -138,25 +138,36 @@ export default function EventHome({ lang: _lang, s, dir, inviteCode, onBack, onA
 
       {/* Expenses */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px 0' }}>
-        {event.expenses.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '48px 0', color: 'var(--sub)', fontSize: 14, fontWeight: 600 }}>
-            <div style={{ fontSize: 40, marginBottom: 10 }}>🧾</div>
-            {s.noExpenses}
-          </div>
-        ) : (
-          event.expenses.map((expense) => (
+        {(() => {
+          const myId = membership?.memberId;
+          const visibleExpenses = myId
+            ? event.expenses.filter((e) =>
+                e.paid_by === myId || e.splits.some((sp) => sp.member_id === myId)
+              )
+            : event.expenses;
+
+          if (visibleExpenses.length === 0) {
+            return (
+              <div style={{ textAlign: 'center', padding: '48px 0', color: 'var(--sub)', fontSize: 14, fontWeight: 600 }}>
+                <div style={{ fontSize: 40, marginBottom: 10 }}>🧾</div>
+                {s.noExpenses}
+              </div>
+            );
+          }
+
+          return visibleExpenses.map((expense) => (
             <ExpenseCard
               key={expense.id}
               expense={expense}
               currency={event.currency}
               memberName={memberName}
-              myMemberId={membership?.memberId}
+              myMemberId={myId}
               onDelete={() => handleDelete(expense.id)}
               deleting={deleting === expense.id}
               s={s}
             />
-          ))
-        )}
+          ));
+        })()}
       </div>
 
       {/* Bottom actions */}
