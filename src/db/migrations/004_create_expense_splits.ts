@@ -5,7 +5,7 @@ export async function up(knex: Knex): Promise<void> {
     t.uuid('id').primary().defaultTo(knex.raw('gen_random_uuid()'));
     t.uuid('expense_id').notNullable().references('id').inTable('expenses').onDelete('CASCADE');
     t.uuid('member_id').notNullable().references('id').inTable('members').onDelete('CASCADE');
-    t.numeric('share_value').notNullable();
+    t.decimal('share_value', 10, 4).notNullable();
     t.integer('amount_cents').notNullable();
   });
 }

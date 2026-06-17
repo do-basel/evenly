@@ -18,7 +18,7 @@ router.post('/', requireMemberToken, async (req: Request, res: Response) => {
     return;
   }
 
-  const event = await getEvent(req.params.inviteCode);
+  const event = await getEvent(req.params.inviteCode as string);
   if (!event) { res.status(404).json({ error: 'Event not found' }); return; }
 
   const caller = res.locals.member;
