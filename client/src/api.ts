@@ -1,10 +1,16 @@
+import { getAuth } from './storage';
+
 const BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
 
 async function req<T>(path: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${BASE}${path}`, {
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    ...options,
-  });
+  const auth = getAuth();
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(options?.headers as Record<string, string>),
+  };
+  if (auth?.token) headers['Authorization'] = `Bearer ${auth.token}`;
+
+  const res = await fetch(`${BASE}${path}`, { ...options, headers });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }));
     throw new Error(err.error ?? 'Request failed');
@@ -13,6 +19,19 @@ async function req<T>(path: string, options?: RequestInit): Promise<T> {
 }
 
 export const api = {
+  // Auth
+  register: (email: string, password: string, name: string) =>
+    req('/api/auth/register', { method: 'POST', body: JSON.stringify({ email, password, name }) }),
+
+  login: (email: string, password: string) =>
+    req('/api/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
+
+  getMe: () => req('/api/auth/me'),
+
+  updateMe: (updates: { name?: string; photo_url?: string | null; language?: string }) =>
+    req('/api/auth/me', { method: 'PATCH', body: JSON.stringify(updates) }),
+
+  // Events
   createEvent: (name: string, currency: string) =>
     req('/api/events', { method: 'POST', body: JSON.stringify({ name, currency }) }),
 
@@ -23,11 +42,6 @@ export const api = {
     req(`/api/events/${inviteCode}/members`, {
       method: 'POST',
       body: JSON.stringify({ name, photo_url }),
-    }),
-
-  getMe: (inviteCode: string, memberToken: string) =>
-    req(`/api/events/${inviteCode}/members/me`, {
-      headers: { 'X-Member-Token': memberToken },
     }),
 
   addExpense: (

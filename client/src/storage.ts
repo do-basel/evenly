@@ -1,7 +1,36 @@
 import type { StoredMembership } from './types';
 
 const MEMBERSHIPS_KEY = 'evenly_memberships';
-const PROFILE_KEY = 'evenly_profile';
+const AUTH_KEY = 'evenly_auth';
+
+export interface AuthUser {
+  id: string;
+  email: string;
+  name: string;
+  photo_url: string | null;
+  language: string;
+}
+
+export interface AuthState {
+  token: string;
+  user: AuthUser;
+}
+
+export function getAuth(): AuthState | null {
+  try {
+    return JSON.parse(localStorage.getItem(AUTH_KEY) ?? 'null');
+  } catch {
+    return null;
+  }
+}
+
+export function saveAuth(state: AuthState): void {
+  localStorage.setItem(AUTH_KEY, JSON.stringify(state));
+}
+
+export function clearAuth(): void {
+  localStorage.removeItem(AUTH_KEY);
+}
 
 export function getMemberships(): StoredMembership[] {
   try {
@@ -21,24 +50,19 @@ export function getMembership(inviteCode: string): StoredMembership | undefined 
   return getMemberships().find((m) => m.inviteCode === inviteCode);
 }
 
+// Legacy profile shim — used by CreateTrip to get user name
 export interface Profile {
   name: string;
 }
 
 export function getProfile(): Profile | null {
-  try {
-    return JSON.parse(localStorage.getItem(PROFILE_KEY) ?? 'null');
-  } catch {
-    return null;
-  }
-}
-
-export function saveProfile(p: Profile): void {
-  localStorage.setItem(PROFILE_KEY, JSON.stringify(p));
+  const auth = getAuth();
+  if (auth) return { name: auth.user.name };
+  return null;
 }
 
 export function clearProfile(): void {
-  localStorage.removeItem(PROFILE_KEY);
+  clearAuth();
 }
 
 export function formatCurrency(cents: number, currency: string): string {

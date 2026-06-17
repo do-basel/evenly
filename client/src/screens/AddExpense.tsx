@@ -1,10 +1,14 @@
-import Notch from '../components/Notch';
 import { useState } from 'react';
 import { api } from '../api';
 import { getMembership } from '../storage';
+// removed unused: formatCurrency from '../storage';
 import type { Event } from '../types';
+import type { Lang, Strings } from '../i18n';
 
 interface Props {
+  lang: Lang;
+  s: Strings;
+  dir: string;
   inviteCode: string;
   event: Event;
   onBack: () => void;
@@ -13,7 +17,7 @@ interface Props {
 
 type SplitType = 'equal' | 'percentage' | 'shares';
 
-export default function AddExpense({ inviteCode, event, onBack, onSaved }: Props) {
+export default function AddExpense({ lang: _lang, s, dir, inviteCode, event, onBack, onSaved }: Props) {
   const membership = getMembership(inviteCode);
   const [description, setDescription] = useState('');
   const [amountStr, setAmountStr] = useState('');
@@ -26,9 +30,9 @@ export default function AddExpense({ inviteCode, event, onBack, onSaved }: Props
   const amountCents = Math.round(parseFloat(amountStr || '0') * 100);
 
   const handleSubmit = async () => {
-    if (!description.trim()) { setError('أدخل وصف المصروف'); return; }
-    if (!amountStr || amountCents <= 0) { setError('أدخل المبلغ'); return; }
-    if (!membership) { setError('لم يتم التعرف عليك'); return; }
+    if (!description.trim()) { setError(s.description); return; }
+    if (!amountStr || amountCents <= 0) { setError(s.amount); return; }
+    if (!membership) return;
 
     const participants = event.members.map((m) => ({
       memberId: m.id,
@@ -36,8 +40,8 @@ export default function AddExpense({ inviteCode, event, onBack, onSaved }: Props
     }));
 
     if (splitType === 'percentage') {
-      const total = participants.reduce((s, p) => s + p.shareValue, 0);
-      if (Math.round(total) !== 100) { setError('النسب يجب أن تساوي 100'); return; }
+      const total = participants.reduce((sum, p) => sum + p.shareValue, 0);
+      if (Math.round(total) !== 100) { setError(s.percentTotal); return; }
     }
 
     setLoading(true);
@@ -59,33 +63,30 @@ export default function AddExpense({ inviteCode, event, onBack, onSaved }: Props
   };
 
   const SPLIT_LABELS: Record<SplitType, string> = {
-    equal: 'بالتساوي',
-    percentage: 'بالنسبة %',
-    shares: 'بالحصص',
+    equal: s.equally,
+    percentage: s.byPercent,
+    shares: s.byShares,
   };
 
   return (
-    <div dir="rtl" style={{ height: '100%', background: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
-      <Notch />
-
-      {/* Header */}
+    <div dir={dir} style={{ height: '100%', background: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
       <div style={{ padding: '52px 20px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
-        <button onClick={onBack} style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--chip)', border: '1px solid var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, cursor: 'pointer', color: 'var(--ink)' }}>←</button>
-        <div style={{ fontSize: 20, fontWeight: 800 }}>مصروف جديد</div>
+        <button onClick={onBack} style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--chip)', border: '1px solid var(--line)', fontSize: 16, cursor: 'pointer', color: 'var(--ink)', flexShrink: 0 }}>
+          {dir === 'rtl' ? '→' : '←'}
+        </button>
+        <div style={{ fontSize: 20, fontWeight: 800 }}>{s.newExpense}</div>
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '0 20px' }}>
-        {/* Description */}
-        <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--sub)', marginBottom: 9 }}>الوصف</div>
+        <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--sub)', marginBottom: 9 }}>{s.description}</div>
         <input
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          placeholder="مثال: عشاء، تاكسي..."
-          style={{ width: '100%', background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--r-input)', padding: '14px 16px', fontSize: 15, fontWeight: 600, color: 'var(--ink)', outline: 'none', direction: 'rtl', marginBottom: 18 }}
+          placeholder={s.expenseDescPlaceholder}
+          style={{ width: '100%', background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--r-input)', padding: '14px 16px', fontSize: 15, fontWeight: 600, color: 'var(--ink)', outline: 'none', direction: dir as any, marginBottom: 18 }}
         />
 
-        {/* Amount */}
-        <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--sub)', marginBottom: 9 }}>المبلغ ({event.currency})</div>
+        <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--sub)', marginBottom: 9 }}>{s.amount} ({event.currency})</div>
         <input
           type="number"
           inputMode="decimal"
@@ -95,42 +96,39 @@ export default function AddExpense({ inviteCode, event, onBack, onSaved }: Props
           style={{ width: '100%', background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--r-input)', padding: '14px 16px', fontSize: 18, fontWeight: 700, color: 'var(--ink)', outline: 'none', direction: 'ltr', textAlign: 'left', marginBottom: 18, fontFamily: 'Hanken Grotesk, sans-serif' }}
         />
 
-        {/* Paid by */}
-        <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--sub)', marginBottom: 9 }}>دفع بواسطة</div>
+        <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--sub)', marginBottom: 9 }}>{s.paidBy}</div>
         <select
           value={paidBy}
           onChange={(e) => setPaidBy(e.target.value)}
-          style={{ width: '100%', background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--r-input)', padding: '14px 16px', fontSize: 15, fontWeight: 600, color: 'var(--ink)', outline: 'none', direction: 'rtl', marginBottom: 18, fontFamily: 'var(--font-body)' }}
+          style={{ width: '100%', background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--r-input)', padding: '14px 16px', fontSize: 15, fontWeight: 600, color: 'var(--ink)', outline: 'none', direction: dir as any, marginBottom: 18, fontFamily: 'var(--font-body)' }}
         >
           {event.members.map((m) => (
-            <option key={m.id} value={m.id}>{m.name}{m.id === membership?.memberId ? ' (أنت)' : ''}</option>
+            <option key={m.id} value={m.id}>{m.name}{m.id === membership?.memberId ? ` (${s.you})` : ''}</option>
           ))}
         </select>
 
-        {/* Split type */}
-        <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--sub)', marginBottom: 9 }}>طريقة القسمة</div>
+        <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--sub)', marginBottom: 9 }}>{s.splitMethod}</div>
         <div style={{ display: 'flex', gap: 8, background: 'var(--chip)', borderRadius: 'var(--r-pill)', padding: 4, marginBottom: 20 }}>
-          {(['equal', 'percentage', 'shares'] as SplitType[]).map((t) => (
+          {(['equal', 'percentage', 'shares'] as SplitType[]).map((tp) => (
             <button
-              key={t}
-              onClick={() => setSplitType(t)}
+              key={tp}
+              onClick={() => setSplitType(tp)}
               style={{
                 flex: 1, padding: '10px 0', borderRadius: 'var(--r-pill)', fontWeight: 700, fontSize: 12,
                 fontFamily: 'var(--font-body)', border: 'none', cursor: 'pointer',
-                background: splitType === t ? 'var(--accent)' : 'transparent',
-                color: splitType === t ? '#fff' : 'var(--ink)',
+                background: splitType === tp ? 'var(--accent)' : 'transparent',
+                color: splitType === tp ? '#fff' : 'var(--ink)',
               }}
             >
-              {SPLIT_LABELS[t]}
+              {SPLIT_LABELS[tp]}
             </button>
           ))}
         </div>
 
-        {/* Overrides for percentage/shares */}
         {splitType !== 'equal' && (
           <div style={{ marginBottom: 20 }}>
             <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--sub)', marginBottom: 10 }}>
-              {splitType === 'percentage' ? 'النسب (المجموع = 100)' : 'الحصص'}
+              {splitType === 'percentage' ? s.percentTotal : s.shares}
             </div>
             {event.members.map((m) => (
               <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
@@ -155,14 +153,9 @@ export default function AddExpense({ inviteCode, event, onBack, onSaved }: Props
         <button
           onClick={handleSubmit}
           disabled={loading}
-          style={{
-            width: '100%', height: 54, borderRadius: 'var(--r-btn)',
-            background: loading ? 'var(--sub)' : 'var(--accent)', color: '#fff',
-            border: 'none', fontSize: 16, fontWeight: 700, fontFamily: 'var(--font-body)',
-            boxShadow: 'var(--btn-shadow)', cursor: loading ? 'not-allowed' : 'pointer',
-          }}
+          style={{ width: '100%', height: 54, borderRadius: 'var(--r-btn)', background: loading ? 'var(--sub)' : 'var(--accent)', color: '#fff', border: 'none', fontSize: 16, fontWeight: 700, fontFamily: 'var(--font-body)', boxShadow: 'var(--btn-shadow)', cursor: loading ? 'not-allowed' : 'pointer' }}
         >
-          {loading ? 'جارٍ الحفظ...' : 'حفظ المصروف'}
+          {loading ? s.saving2 : s.save}
         </button>
       </div>
     </div>

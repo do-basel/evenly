@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import db from '../db/knex';
 import { requireMemberToken } from '../middleware/auth';
+import { verifyToken } from '../lib/jwt';
 
 const router = Router({ mergeParams: true });
 
@@ -15,8 +16,15 @@ router.post('/', async (req: Request, res: Response) => {
   const event = await db('events').where({ invite_code: req.params.inviteCode }).first();
   if (!event) { res.status(404).json({ error: 'Event not found' }); return; }
 
+  // Link to user account if JWT present
+  let user_id: string | null = null;
+  const authHeader = req.headers['authorization'];
+  if (authHeader?.startsWith('Bearer ')) {
+    try { user_id = verifyToken(authHeader.slice(7)).sub; } catch { /* ignore */ }
+  }
+
   const [member] = await db('members')
-    .insert({ event_id: event.id, name, photo_url: photo_url ?? null })
+    .insert({ event_id: event.id, name, photo_url: photo_url ?? null, user_id })
     .returning('*');
 
   res.status(201).json({

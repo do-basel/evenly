@@ -1,10 +1,13 @@
-import Notch from '../components/Notch';
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '../api';
 import { getMembership, formatCurrency } from '../storage';
 import type { Event, ExpenseWithSplits } from '../types';
+import type { Lang, Strings } from '../i18n';
 
 interface Props {
+  lang: Lang;
+  s: Strings;
+  dir: string;
   inviteCode: string;
   onBack: () => void;
   onAddExpense: (event: Event) => void;
@@ -19,7 +22,7 @@ function Avatar({ name, size = 36 }: { name: string; size?: number }) {
   );
 }
 
-export default function EventHome({ inviteCode, onBack, onAddExpense, onSettlement }: Props) {
+export default function EventHome({ lang: _lang, s, dir, inviteCode, onBack, onAddExpense, onSettlement }: Props) {
   const [event, setEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<string | null>(null);
@@ -45,25 +48,23 @@ export default function EventHome({ inviteCode, onBack, onAddExpense, onSettleme
     finally { setDeleting(null); }
   };
 
-  const memberName = (id: string) =>
-    event?.members.find((m) => m.id === id)?.name ?? '؟';
-
+  const memberName = (id: string) => event?.members.find((m) => m.id === id)?.name ?? '؟';
   const myBalance = event?.balances.find((b) => b.memberId === membership?.memberId);
 
   if (loading) {
     return (
-      <div dir="rtl" style={{ minHeight: '844px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)', fontSize: 16, color: 'var(--sub)' }}>
-        جارٍ التحميل...
+      <div dir={dir} style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)', fontSize: 16, color: 'var(--sub)' }}>
+        {s.loading}
       </div>
     );
   }
 
   if (!event) {
     return (
-      <div dir="rtl" style={{ minHeight: '844px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)', padding: 24, gap: 16 }}>
+      <div dir={dir} style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)', padding: 24, gap: 16 }}>
         <div style={{ fontSize: 48 }}>😕</div>
-        <div style={{ fontSize: 16, fontWeight: 700 }}>تعذّر تحميل الرحلة</div>
-        <button onClick={onBack} style={{ padding: '12px 24px', borderRadius: 'var(--r-btn)', background: 'var(--accent)', color: '#fff', border: 'none', fontWeight: 700, fontSize: 14, cursor: 'pointer', fontFamily: 'var(--font-body)' }}>رجوع</button>
+        <div style={{ fontSize: 16, fontWeight: 700 }}>{s.loadFailed}</div>
+        <button onClick={onBack} style={{ padding: '12px 24px', borderRadius: 'var(--r-btn)', background: 'var(--accent)', color: '#fff', border: 'none', fontWeight: 700, fontSize: 14, cursor: 'pointer', fontFamily: 'var(--font-body)' }}>{s.back}</button>
       </div>
     );
   }
@@ -71,31 +72,29 @@ export default function EventHome({ inviteCode, onBack, onAddExpense, onSettleme
   const shareLink = `${window.location.origin}/j/${inviteCode}`;
 
   return (
-    <div dir="rtl" style={{ height: '100%', background: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
-      <Notch />
-
+    <div dir={dir} style={{ height: '100%', background: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
       {/* Header */}
       <div style={{ padding: '52px 20px 16px', background: 'var(--surface)', borderBottom: '1px solid var(--line)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-          <button onClick={onBack} style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--chip)', border: '1px solid var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, cursor: 'pointer', color: 'var(--ink)' }}>←</button>
+          <button onClick={onBack} style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--chip)', border: '1px solid var(--line)', fontSize: 16, cursor: 'pointer', color: 'var(--ink)', flexShrink: 0 }}>
+            {dir === 'rtl' ? '→' : '←'}
+          </button>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 20, fontWeight: 800 }}>{event.name}</div>
-            <div style={{ fontSize: 12, color: 'var(--sub)', fontWeight: 600, marginTop: 1 }}>{event.members.length} أشخاص · {event.currency}</div>
+            <div style={{ fontSize: 12, color: 'var(--sub)', fontWeight: 600, marginTop: 1 }}>{event.members.length} {s.persons} · {event.currency}</div>
           </div>
           <button
             onClick={() => navigator.clipboard.writeText(shareLink).catch(() => {})}
-            title="نسخ رابط الدعوة"
-            style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--chip)', border: '1px solid var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, cursor: 'pointer', color: 'var(--accent)' }}
+            style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--chip)', border: '1px solid var(--line)', fontSize: 15, cursor: 'pointer', color: 'var(--accent)', flexShrink: 0 }}
           >
             🔗
           </button>
         </div>
 
-        {/* My balance */}
         {myBalance && (
           <div style={{ background: myBalance.netCents >= 0 ? '#EEF7F1' : '#FDF0EE', borderRadius: 'var(--r-card)', padding: '12px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--sub)' }}>
-              {myBalance.netCents >= 0 ? 'مستحق لك' : 'مستحق عليك'}
+              {myBalance.netCents >= 0 ? s.owed : s.owes}
             </div>
             <div style={{ fontSize: 18, fontWeight: 800, color: myBalance.netCents >= 0 ? 'var(--positive)' : 'var(--negative)', fontFamily: 'Hanken Grotesk, sans-serif' }}>
               {formatCurrency(myBalance.netCents, event.currency)}
@@ -103,7 +102,6 @@ export default function EventHome({ inviteCode, onBack, onAddExpense, onSettleme
           </div>
         )}
 
-        {/* Members row */}
         <div style={{ display: 'flex', gap: 8, marginTop: 12, overflowX: 'auto', paddingBottom: 2 }}>
           {event.members.map((m) => (
             <div key={m.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, flexShrink: 0 }}>
@@ -114,12 +112,12 @@ export default function EventHome({ inviteCode, onBack, onAddExpense, onSettleme
         </div>
       </div>
 
-      {/* Expenses list */}
+      {/* Expenses */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px 0' }}>
         {event.expenses.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '48px 0', color: 'var(--sub)', fontSize: 14, fontWeight: 600 }}>
             <div style={{ fontSize: 40, marginBottom: 10 }}>🧾</div>
-            لا توجد مصاريف بعد
+            {s.noExpenses}
           </div>
         ) : (
           event.expenses.map((expense) => (
@@ -131,6 +129,7 @@ export default function EventHome({ inviteCode, onBack, onAddExpense, onSettleme
               myMemberId={membership?.memberId}
               onDelete={() => handleDelete(expense.id)}
               deleting={deleting === expense.id}
+              s={s}
             />
           ))
         )}
@@ -140,41 +139,32 @@ export default function EventHome({ inviteCode, onBack, onAddExpense, onSettleme
       <div style={{ padding: '16px 20px 32px', display: 'flex', gap: 10 }}>
         <button
           onClick={() => onAddExpense(event)}
-          style={{
-            flex: 1, height: 52, borderRadius: 'var(--r-btn)', background: 'var(--accent)',
-            color: '#fff', border: 'none', fontSize: 15, fontWeight: 700,
-            fontFamily: 'var(--font-body)', boxShadow: 'var(--btn-shadow)', cursor: 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-          }}
+          style={{ flex: 1, height: 52, borderRadius: 'var(--r-btn)', background: 'var(--accent)', color: '#fff', border: 'none', fontSize: 15, fontWeight: 700, fontFamily: 'var(--font-body)', boxShadow: 'var(--btn-shadow)', cursor: 'pointer' }}
         >
-          <span style={{ fontSize: 18 }}>+</span> مصروف
+          + {s.newExpense}
         </button>
         <button
           onClick={() => onSettlement(event)}
-          style={{
-            flex: 1, height: 52, borderRadius: 'var(--r-btn)', background: 'var(--surface)',
-            color: 'var(--accent)', border: '1.5px solid var(--accent)', fontSize: 15, fontWeight: 700,
-            fontFamily: 'var(--font-body)', cursor: 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-          }}
+          style={{ flex: 1, height: 52, borderRadius: 'var(--r-btn)', background: 'var(--surface)', color: 'var(--accent)', border: '1.5px solid var(--accent)', fontSize: 15, fontWeight: 700, fontFamily: 'var(--font-body)', cursor: 'pointer' }}
         >
-          ÷ التسوية
+          ÷ {s.settlement}
         </button>
       </div>
     </div>
   );
 }
 
-function ExpenseCard({ expense, currency, memberName, myMemberId, onDelete, deleting }: {
+function ExpenseCard({ expense, currency, memberName, myMemberId, onDelete, deleting, s }: {
   expense: ExpenseWithSplits;
   currency: string;
   memberName: (id: string) => string;
   myMemberId?: string;
   onDelete: () => void;
   deleting: boolean;
+  s: Strings;
 }) {
   const isOwner = expense.created_by === myMemberId;
-  const mySplit = expense.splits.find((s) => s.member_id === myMemberId);
+  const mySplit = expense.splits.find((sp) => sp.member_id === myMemberId);
 
   return (
     <div style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--r-card)', padding: '13px 14px', marginBottom: 10 }}>
@@ -182,7 +172,7 @@ function ExpenseCard({ expense, currency, memberName, myMemberId, onDelete, dele
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 15, fontWeight: 700 }}>{expense.description}</div>
           <div style={{ fontSize: 12, color: 'var(--sub)', fontWeight: 600, marginTop: 3 }}>
-            دفع {memberName(expense.paid_by)} · {expense.split_type === 'equal' ? 'بالتساوي' : expense.split_type === 'percentage' ? 'بالنسبة' : 'بالحصص'}
+            {s.paidByMember} {memberName(expense.paid_by)}
           </div>
         </div>
         <div style={{ textAlign: 'left', flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
@@ -191,7 +181,7 @@ function ExpenseCard({ expense, currency, memberName, myMemberId, onDelete, dele
           </div>
           {mySplit && (
             <div style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--sub)' }}>
-              حصتك: {formatCurrency(mySplit.amount_cents, currency)}
+              {s.myShare}: {formatCurrency(mySplit.amount_cents, currency)}
             </div>
           )}
         </div>
@@ -202,7 +192,7 @@ function ExpenseCard({ expense, currency, memberName, myMemberId, onDelete, dele
           disabled={deleting}
           style={{ marginTop: 10, fontSize: 12, fontWeight: 700, color: 'var(--negative)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-body)', padding: 0 }}
         >
-          {deleting ? 'جارٍ الحذف...' : 'حذف'}
+          {deleting ? s.deleting : s.delete}
         </button>
       )}
     </div>

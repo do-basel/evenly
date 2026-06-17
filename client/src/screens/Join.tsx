@@ -1,15 +1,18 @@
-import Notch from '../components/Notch';
 import { useState, useEffect } from 'react';
 import { api } from '../api';
 import { saveMembership, getMembership } from '../storage';
 import type { Event } from '../types';
+import type { Lang, Strings } from '../i18n';
 
 interface Props {
+  lang: Lang;
+  s: Strings;
+  dir: string;
   inviteCode: string;
   onJoined: () => void;
 }
 
-export default function Join({ inviteCode, onJoined }: Props) {
+export default function Join({ lang: _lang, s, dir, inviteCode, onJoined }: Props) {
   const [event, setEvent] = useState<Event | null>(null);
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
@@ -17,18 +20,17 @@ export default function Join({ inviteCode, onJoined }: Props) {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    // Already a member?
     const existing = getMembership(inviteCode);
     if (existing) { onJoined(); return; }
 
     api.getEvent(inviteCode)
       .then((e) => setEvent(e as Event))
-      .catch(() => setError('لم يتم العثور على الرحلة'))
+      .catch(() => setError(s.notFound))
       .finally(() => setFetching(false));
   }, [inviteCode]);
 
   const handleJoin = async () => {
-    if (!name.trim()) { setError('أدخل اسمك'); return; }
+    if (!name.trim()) { setError(s.name); return; }
     if (!event) return;
     setLoading(true);
     setError('');
@@ -53,35 +55,32 @@ export default function Join({ inviteCode, onJoined }: Props) {
 
   if (fetching) {
     return (
-      <div dir="rtl" style={{ minHeight: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)', fontSize: 16, color: 'var(--sub)' }}>
-        جارٍ التحميل...
+      <div dir={dir} style={{ minHeight: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)', fontSize: 16, color: 'var(--sub)' }}>
+        {s.loading}
       </div>
     );
   }
 
   if (!event && error) {
     return (
-      <div dir="rtl" style={{ minHeight: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)', padding: 24, gap: 16 }}>
+      <div dir={dir} style={{ minHeight: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)', padding: 24, gap: 16 }}>
         <div style={{ fontSize: 48 }}>😕</div>
         <div style={{ fontSize: 18, fontWeight: 700 }}>{error}</div>
-        <div style={{ fontSize: 13, color: 'var(--sub)' }}>تحقق من الرابط وأعد المحاولة</div>
+        <div style={{ fontSize: 13, color: 'var(--sub)' }}>{s.checkLink}</div>
       </div>
     );
   }
 
   return (
-    <div dir="rtl" style={{ minHeight: '100%', background: 'var(--bg)', display: 'flex', flexDirection: 'column', padding: '60px 24px 40px' }}>
-      <Notch />
+    <div dir={dir} style={{ minHeight: '100%', background: 'var(--bg)', display: 'flex', flexDirection: 'column', padding: '60px 24px 40px' }}>
+      <div style={{ width: 62, height: 62, borderRadius: 18, background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 36, fontWeight: 800, marginBottom: 24, marginTop: 30 }}>÷</div>
 
-      <div style={{ width: 62, height: 62, borderRadius: 18, background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-ink)', fontSize: 36, fontWeight: 800, marginBottom: 24, marginTop: 30 }}>÷</div>
-
-      <div style={{ fontSize: 24, fontWeight: 800 }}>انضم إلى الرحلة</div>
+      <div style={{ fontSize: 24, fontWeight: 800 }}>{s.joinTrip}</div>
       <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--accent)', marginTop: 4 }}>{event?.name}</div>
       <div style={{ fontSize: 13, color: 'var(--sub)', fontWeight: 600, marginTop: 6 }}>
-        {event?.members.length} {event?.members.length === 1 ? 'شخص' : 'أشخاص'} في الرحلة
+        {event?.members.length} {event?.members.length === 1 ? s.person : s.persons}
       </div>
 
-      {/* Members preview */}
       {event && event.members.length > 0 && (
         <div style={{ display: 'flex', gap: 8, marginTop: 16, marginBottom: 4, flexWrap: 'wrap' }}>
           {event.members.slice(0, 5).map((m) => (
@@ -96,17 +95,13 @@ export default function Join({ inviteCode, onJoined }: Props) {
       )}
 
       <div style={{ marginTop: 32 }}>
-        <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--sub)', marginBottom: 9 }}>اسمك</div>
+        <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--sub)', marginBottom: 9 }}>{s.name}</div>
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleJoin()}
-          placeholder="مثال: سارة"
-          style={{
-            width: '100%', background: 'var(--surface)', border: '1px solid var(--line)',
-            borderRadius: 'var(--r-input)', padding: '14px 16px', fontSize: 15, fontWeight: 600,
-            fontFamily: 'var(--font-body)', color: 'var(--ink)', outline: 'none', direction: 'rtl',
-          }}
+          placeholder={s.namePlaceholder}
+          style={{ width: '100%', background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--r-input)', padding: '14px 16px', fontSize: 15, fontWeight: 600, fontFamily: 'var(--font-body)', color: 'var(--ink)', outline: 'none', direction: dir as any }}
         />
       </div>
 
@@ -117,12 +112,12 @@ export default function Join({ inviteCode, onJoined }: Props) {
         disabled={loading}
         style={{
           marginTop: 28, width: '100%', height: 54, borderRadius: 'var(--r-btn)',
-          background: loading ? 'var(--sub)' : 'var(--accent)', color: 'var(--accent-ink)',
+          background: loading ? 'var(--sub)' : 'var(--accent)', color: '#fff',
           border: 'none', fontSize: 16, fontWeight: 700, fontFamily: 'var(--font-body)',
           boxShadow: 'var(--btn-shadow)', cursor: loading ? 'not-allowed' : 'pointer',
         }}
       >
-        {loading ? 'جارٍ الانضمام...' : 'انضم الآن'}
+        {loading ? s.joining : s.joinNow}
       </button>
     </div>
   );

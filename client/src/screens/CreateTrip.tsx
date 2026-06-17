@@ -1,9 +1,12 @@
 import { useState, useRef } from 'react';
 import { api } from '../api';
-import { saveMembership, getProfile } from '../storage';
-import Notch from '../components/Notch';
+import { saveMembership, getAuth } from '../storage';
+import type { Lang, Strings } from '../i18n';
 
 interface Props {
+  lang: Lang;
+  s: Strings;
+  dir: string;
   onBack: () => void;
   onCreated: (inviteCode: string, name: string) => void;
 }
@@ -13,10 +16,9 @@ const CURRENCIES = [
   { code: 'USD', label: '$' },
   { code: 'EUR', label: '€' },
 ];
-
 const TRIP_EMOJIS = ['🏜️', '⛺️', '🏝️', '🗺️', '🏔️', '🌊', '🏕️', '✈️', '🎿', '🚗'];
 
-export default function CreateTrip({ onBack, onCreated }: Props) {
+export default function CreateTrip({ lang: _lang, s, dir, onBack, onCreated }: Props) {
   const [name, setName] = useState('');
   const [currency, setCurrency] = useState('SAR');
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
@@ -34,13 +36,13 @@ export default function CreateTrip({ onBack, onCreated }: Props) {
   };
 
   const handleCreate = async () => {
-    if (!name.trim()) { setError('أدخل اسم الرحلة'); return; }
+    if (!name.trim()) { setError(s.tripName); return; }
     setLoading(true);
     setError('');
     try {
       const event = await api.createEvent(name.trim(), currency) as any;
-      const profile = getProfile();
-      const joined = await api.joinEvent(event.invite_code, profile?.name ?? 'أنا') as any;
+      const auth = getAuth();
+      const joined = await api.joinEvent(event.invite_code, auth?.user.name ?? 'أنا') as any;
       saveMembership({
         inviteCode: event.invite_code,
         eventName: event.name,
@@ -59,13 +61,11 @@ export default function CreateTrip({ onBack, onCreated }: Props) {
   };
 
   return (
-    <div dir="rtl" style={{ minHeight: '100%', background: 'var(--bg)', display: 'flex', flexDirection: 'column', padding: '52px 24px 40px' }}>
-      <Notch />
-
+    <div dir={dir} style={{ minHeight: '100%', background: 'var(--bg)', display: 'flex', flexDirection: 'column', padding: '52px 24px 40px' }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32 }}>
-        <div style={{ fontSize: 22, fontWeight: 800 }}>رحلة جديدة</div>
-        <button onClick={onBack} style={{ width: 34, height: 34, borderRadius: '50%', background: 'var(--chip)', border: '1px solid var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, color: 'var(--sub)', cursor: 'pointer' }}>×</button>
+        <div style={{ fontSize: 22, fontWeight: 800 }}>{s.newTripTitle}</div>
+        <button onClick={onBack} style={{ width: 34, height: 34, borderRadius: '50%', background: 'var(--chip)', border: '1px solid var(--line)', fontSize: 18, color: 'var(--sub)', cursor: 'pointer' }}>×</button>
       </div>
 
       {/* Trip photo */}
@@ -73,34 +73,28 @@ export default function CreateTrip({ onBack, onCreated }: Props) {
         <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handlePhotoChange} />
         <div
           onClick={() => fileRef.current?.click()}
-          style={{ width: 104, height: 104, borderRadius: 26, background: photoPreview ? 'transparent' : 'var(--chip)', border: '2px dashed var(--line)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5, color: 'var(--sub)', cursor: 'pointer', overflow: 'hidden', position: 'relative' }}
+          style={{ width: 104, height: 104, borderRadius: 26, background: photoPreview ? 'transparent' : 'var(--chip)', border: '2px dashed var(--line)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5, color: 'var(--sub)', cursor: 'pointer', overflow: 'hidden' }}
         >
           {photoPreview ? (
             <img src={photoPreview} alt="trip" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           ) : (
             <>
               <span style={{ fontSize: 28 }}>{emoji}</span>
-              <span style={{ fontSize: 11, fontWeight: 700 }}>اضغط لإضافة صورة</span>
+              <span style={{ fontSize: 11, fontWeight: 700 }}>{s.tripPhoto}</span>
             </>
           )}
         </div>
       </div>
 
-      {/* Name input */}
-      <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--sub)', marginBottom: 9 }}>اسم الرحلة</div>
+      <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--sub)', marginBottom: 9 }}>{s.tripName}</div>
       <input
         value={name}
         onChange={(e) => setName(e.target.value)}
-        placeholder="مثال: رحلة العلا ٢٦"
-        style={{
-          width: '100%', background: 'var(--surface)', border: '1px solid var(--line)',
-          borderRadius: 'var(--r-input)', padding: '14px 16px', fontSize: 16, fontWeight: 600,
-          fontFamily: 'var(--font-body)', color: 'var(--ink)', outline: 'none', direction: 'rtl', marginBottom: 22,
-        }}
+        placeholder={s.tripNamePlaceholder}
+        style={{ width: '100%', background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--r-input)', padding: '14px 16px', fontSize: 16, fontWeight: 600, fontFamily: 'var(--font-body)', color: 'var(--ink)', outline: 'none', direction: dir as any, marginBottom: 22 }}
       />
 
-      {/* Currency picker */}
-      <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--sub)', marginBottom: 11 }}>عملة الرحلة</div>
+      <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--sub)', marginBottom: 11 }}>{s.tripCurrency}</div>
       <div style={{ display: 'flex', gap: 8, background: 'var(--chip)', borderRadius: 'var(--r-pill)', padding: 4, marginBottom: 32 }}>
         {CURRENCIES.map((c) => (
           <button
@@ -110,7 +104,7 @@ export default function CreateTrip({ onBack, onCreated }: Props) {
               flex: 1, padding: '13px 0', borderRadius: 'var(--r-pill)', fontWeight: 700, fontSize: 14,
               fontFamily: 'var(--font-body)', border: 'none', cursor: 'pointer',
               background: currency === c.code ? 'var(--accent)' : 'transparent',
-              color: currency === c.code ? 'var(--accent-ink)' : 'var(--ink)',
+              color: currency === c.code ? '#fff' : 'var(--ink)',
             }}
           >
             {c.label}
@@ -125,12 +119,11 @@ export default function CreateTrip({ onBack, onCreated }: Props) {
         disabled={loading}
         style={{
           width: '100%', height: 54, borderRadius: 'var(--r-btn)', background: loading ? 'var(--sub)' : 'var(--accent)',
-          color: 'var(--accent-ink)', border: 'none', fontSize: 16, fontWeight: 700,
+          color: '#fff', border: 'none', fontSize: 16, fontWeight: 700,
           fontFamily: 'var(--font-body)', boxShadow: 'var(--btn-shadow)', cursor: loading ? 'not-allowed' : 'pointer',
-          alignItems: 'center', justifyContent: 'center',
         }}
       >
-        {loading ? 'جارٍ الإنشاء...' : 'إنشاء الرحلة'}
+        {loading ? s.creating : s.createTrip}
       </button>
     </div>
   );
