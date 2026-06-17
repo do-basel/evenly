@@ -1,0 +1,54 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;600;700;800&family=Hanken+Grotesk:wght@400;600;700;800&display=swap');
+
+:root {
+  --bg: #FBF6EF;
+  --ink: #2A2520;
+  --accent: #C25E3A;
+  --accent-ink: #FFFFFF;
+  --surface: #FFFFFF;
+  --line: #E8E0D4;
+  --sub: #8C7A6B;
+  --chip: #F0EAE1;
+  --positive: #4A8C5C;
+  --negative: #C0392B;
+  --card-shadow: 0 2px 8px rgba(60,40,25,.08);
+  --btn-shadow: 0 4px 14px rgba(194,94,58,.35);
+  --r-card: 16px;
+  --r-btn: 14px;
+  --r-input: 12px;
+  --r-avatar: 50%;
+  --r-pill: 100px;
+  --font-body: 'IBM Plex Sans Arabic', sans-serif;
+  --font-head: 'IBM Plex Sans Arabic', sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--font-body);
+  background: #E7E3DC;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+#root {
+  position: relative;
+  width: 390px;
+  min-height: 844px;
+  background: var(--bg);
+  border-radius: 44px;
+  overflow: hidden;
+  box-shadow: 0 30px 60px -16px rgba(60,40,25,.45), 0 4px 16px rgba(0,0,0,.2);
+}
+
+input, button { font-family: var(--font-body); }
+input { display: block; }
+button { display: flex; }
+
+@media (max-width: 440px) {
+  body { padding: 0; background: var(--bg); }
+  #root { width: 100vw; min-height: 100dvh; border-radius: 0; box-shadow: none; }
+}
