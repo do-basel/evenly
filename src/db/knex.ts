@@ -1,10 +1,12 @@
 import Knex from 'knex';
-import * as dotenv from 'dotenv';
-dotenv.config();
+
+const isProduction = process.env.NODE_ENV === 'production';
 
 const db = Knex({
   client: 'pg',
-  connection: process.env.DATABASE_URL,
+  connection: isProduction
+    ? { connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } }
+    : process.env.DATABASE_URL,
 });
 
 export default db;
