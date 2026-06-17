@@ -15,10 +15,12 @@ interface Props {
   onTripSettings: (event: Event) => void;
 }
 
-function Avatar({ name, size = 36 }: { name: string; size?: number }) {
+function Avatar({ name, photo, size = 36 }: { name: string; photo?: string | null; size?: number }) {
   return (
-    <div style={{ width: size, height: size, borderRadius: '50%', background: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: size * 0.38, fontWeight: 700, flexShrink: 0 }}>
-      {name[0]}
+    <div style={{ width: size, height: size, borderRadius: '50%', background: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: size * 0.38, fontWeight: 700, flexShrink: 0, overflow: 'hidden' }}>
+      {photo
+        ? <img src={photo} alt={name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        : name[0]}
     </div>
   );
 }
@@ -127,7 +129,7 @@ export default function EventHome({ lang: _lang, s, dir, inviteCode, onBack, onA
         <div style={{ display: 'flex', gap: 8, marginTop: 12, overflowX: 'auto', paddingBottom: 2 }}>
           {event.members.map((m) => (
             <div key={m.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, flexShrink: 0 }}>
-              <Avatar name={m.name} size={32} />
+              <Avatar name={m.name} photo={m.photo_url} size={32} />
               <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--sub)', maxWidth: 44, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.name}</div>
             </div>
           ))}

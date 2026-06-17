@@ -25,9 +25,15 @@ router.get('/:inviteCode', async (req: Request, res: Response) => {
   if (!event) { res.status(404).json({ error: 'Event not found' }); return; }
 
   const members = await db('members')
-    .where({ event_id: event.id })
-    .select('id', 'name', 'photo_url', 'created_at')
-    .orderBy('created_at', 'asc');
+    .where('members.event_id', event.id)
+    .leftJoin('users', 'members.user_id', 'users.id')
+    .select(
+      'members.id',
+      'members.name',
+      db.raw('COALESCE(members.photo_url, users.photo_url) as photo_url'),
+      'members.created_at'
+    )
+    .orderBy('members.created_at', 'asc');
 
   const expenses = await db('expenses')
     .where({ event_id: event.id })

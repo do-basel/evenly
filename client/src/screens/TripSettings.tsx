@@ -205,8 +205,10 @@ export default function TripSettings({ s, dir, inviteCode, event, onBack, onRena
         <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--sub)', marginBottom: 12 }}>الأعضاء ({members.length})</div>
         {members.map((m) => (
           <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--r-card)', padding: '12px 14px', marginBottom: 8 }}>
-            <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, flexShrink: 0 }}>
-              {m.name[0]}
+            <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, flexShrink: 0, overflow: 'hidden' }}>
+              {m.photo_url
+                ? <img src={m.photo_url} alt={m.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                : m.name[0]}
             </div>
             <div style={{ flex: 1, fontSize: 14, fontWeight: 700 }}>
               {m.name}
