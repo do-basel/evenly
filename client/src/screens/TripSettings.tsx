@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { api } from '../api';
-import { getMembership, getMemberships } from '../storage';
+import { getMembership, getMemberships, removeMembership } from '../storage';
 import type { Event, Member } from '../types';
 import type { Strings } from '../i18n';
 
@@ -11,9 +11,10 @@ interface Props {
   event: Event;
   onBack: () => void;
   onRenamed: (newName: string) => void;
+  onLeft: () => void;
 }
 
-export default function TripSettings({ s, dir, inviteCode, event, onBack, onRenamed }: Props) {
+export default function TripSettings({ s, dir, inviteCode, event, onBack, onRenamed, onLeft }: Props) {
   const membership = getMembership(inviteCode)!;
   const [tripName, setTripName] = useState(event.name);
   const [saving, setSaving] = useState(false);
@@ -21,6 +22,10 @@ export default function TripSettings({ s, dir, inviteCode, event, onBack, onRena
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [members, setMembers] = useState<Member[]>(event.members);
   const [error, setError] = useState('');
+  const [confirmLeave, setConfirmLeave] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [leaving, setLeaving] = useState(false);
+  const [deletingTrip, setDeletingTrip] = useState(false);
 
   const handleRename = async () => {
     if (!tripName.trim() || tripName.trim() === event.name) return;
@@ -54,6 +59,34 @@ export default function TripSettings({ s, dir, inviteCode, event, onBack, onRena
       setError(e.message ?? 'حدث خطأ');
     } finally {
       setRemovingId(null);
+    }
+  };
+
+  const handleLeave = async () => {
+    setLeaving(true);
+    setError('');
+    try {
+      await api.removeMember(inviteCode, membership.memberToken, membership.memberId);
+      removeMembership(inviteCode);
+      onLeft();
+    } catch (e: any) {
+      setError(e.message ?? 'حدث خطأ');
+      setLeaving(false);
+      setConfirmLeave(false);
+    }
+  };
+
+  const handleDeleteTrip = async () => {
+    setDeletingTrip(true);
+    setError('');
+    try {
+      await api.deleteTrip(inviteCode, membership.memberToken);
+      removeMembership(inviteCode);
+      onLeft();
+    } catch (e: any) {
+      setError(e.message ?? 'حدث خطأ');
+      setDeletingTrip(false);
+      setConfirmDelete(false);
     }
   };
 
@@ -137,6 +170,58 @@ export default function TripSettings({ s, dir, inviteCode, event, onBack, onRena
         ))}
 
         {error && <div style={{ color: 'var(--negative)', fontSize: 13, fontWeight: 600, marginTop: 12 }}>{error}</div>}
+
+        {/* Leave trip */}
+        <div style={{ marginTop: 28, borderTop: '1px solid var(--line)', paddingTop: 24 }}>
+          {!confirmLeave ? (
+            <button
+              onClick={() => setConfirmLeave(true)}
+              style={{ width: '100%', height: 48, borderRadius: 'var(--r-btn)', background: 'var(--surface)', color: 'var(--negative)', border: '1.5px solid var(--negative)', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-body)' }}
+            >
+              {dir === 'rtl' ? 'مغادرة الرحلة' : 'Leave Trip'}
+            </button>
+          ) : (
+            <div style={{ background: '#FDF0EE', borderRadius: 'var(--r-card)', padding: '14px 16px' }}>
+              <div style={{ fontSize: 13.5, fontWeight: 700, marginBottom: 12 }}>
+                {dir === 'rtl' ? 'هل تريد مغادرة الرحلة؟ لن تظهر لك بعد الآن.' : 'Leave this trip? It will be removed from your list.'}
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button onClick={() => setConfirmLeave(false)} style={{ flex: 1, height: 40, borderRadius: 'var(--r-btn)', background: 'var(--chip)', border: '1px solid var(--line)', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-body)', color: 'var(--ink)' }}>
+                  {dir === 'rtl' ? 'إلغاء' : 'Cancel'}
+                </button>
+                <button onClick={handleLeave} disabled={leaving} style={{ flex: 1, height: 40, borderRadius: 'var(--r-btn)', background: 'var(--negative)', border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-body)', color: '#fff' }}>
+                  {leaving ? '...' : (dir === 'rtl' ? 'مغادرة' : 'Leave')}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Delete trip */}
+        <div style={{ marginTop: 12, marginBottom: 8 }}>
+          {!confirmDelete ? (
+            <button
+              onClick={() => setConfirmDelete(true)}
+              style={{ width: '100%', height: 48, borderRadius: 'var(--r-btn)', background: 'var(--negative)', color: '#fff', border: 'none', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-body)' }}
+            >
+              {dir === 'rtl' ? 'حذف الرحلة للجميع' : 'Delete Trip for Everyone'}
+            </button>
+          ) : (
+            <div style={{ background: '#FDF0EE', borderRadius: 'var(--r-card)', padding: '14px 16px' }}>
+              <div style={{ fontSize: 13.5, fontWeight: 700, marginBottom: 12 }}>
+                {dir === 'rtl' ? 'سيتم حذف الرحلة والمصروفات للجميع. لا يمكن التراجع.' : 'This will permanently delete the trip and all expenses for everyone.'}
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button onClick={() => setConfirmDelete(false)} style={{ flex: 1, height: 40, borderRadius: 'var(--r-btn)', background: 'var(--chip)', border: '1px solid var(--line)', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-body)', color: 'var(--ink)' }}>
+                  {dir === 'rtl' ? 'إلغاء' : 'Cancel'}
+                </button>
+                <button onClick={handleDeleteTrip} disabled={deletingTrip} style={{ flex: 1, height: 40, borderRadius: 'var(--r-btn)', background: 'var(--negative)', border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-body)', color: '#fff' }}>
+                  {deletingTrip ? '...' : (dir === 'rtl' ? 'حذف نهائي' : 'Delete')}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

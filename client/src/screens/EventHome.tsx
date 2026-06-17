@@ -95,7 +95,7 @@ export default function EventHome({ lang: _lang, s, dir, inviteCode, onBack, onA
           >
             {copiedLink ? '✓' : '🔗'}
           </button>
-          {membership?.isCreator && (
+          {membership && (
             <button
               onClick={() => onTripSettings(event)}
               style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--chip)', border: '1px solid var(--line)', fontSize: 15, cursor: 'pointer', color: 'var(--ink)', flexShrink: 0 }}

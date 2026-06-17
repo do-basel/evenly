@@ -80,6 +80,12 @@ export const api = {
       headers: { 'X-Member-Token': memberToken },
     }),
 
+  deleteTrip: (inviteCode: string, memberToken: string) =>
+    req(`/api/events/${inviteCode}`, {
+      method: 'DELETE',
+      headers: { 'X-Member-Token': memberToken },
+    }),
+
   getSettlement: (inviteCode: string) =>
     req(`/api/events/${inviteCode}/settlements`),
 

@@ -74,7 +74,27 @@ router.patch('/:inviteCode', async (req: Request, res: Response) => {
   res.json(updated);
 });
 
-// DELETE /api/events/:inviteCode/members/:memberId — remove member (creator only)
+// DELETE /api/events/:inviteCode — delete entire trip
+router.delete('/:inviteCode', async (req: Request, res: Response) => {
+  const memberToken = req.headers['x-member-token'] as string;
+  if (!memberToken) { res.status(401).json({ error: 'غير مصرح' }); return; }
+
+  const event = await db('events').where({ invite_code: req.params.inviteCode }).first();
+  if (!event) { res.status(404).json({ error: 'Event not found' }); return; }
+
+  const member = await db('members').where({ member_token: memberToken, event_id: event.id }).first();
+  if (!member) { res.status(403).json({ error: 'غير مصرح' }); return; }
+
+  const expenseIds = await db('expenses').where({ event_id: event.id }).pluck('id');
+  if (expenseIds.length) await db('expense_splits').whereIn('expense_id', expenseIds).delete();
+  await db('expenses').where({ event_id: event.id }).delete();
+  await db('members').where({ event_id: event.id }).delete();
+  await db('events').where({ id: event.id }).delete();
+
+  res.json({ ok: true });
+});
+
+// DELETE /api/events/:inviteCode/members/:memberId — remove member
 router.delete('/:inviteCode/members/:memberId', async (req: Request, res: Response) => {
   const memberToken = req.headers['x-member-token'] as string;
   if (!memberToken) { res.status(401).json({ error: 'غير مصرح' }); return; }

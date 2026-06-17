@@ -104,6 +104,7 @@ export default function App() {
           event={screen.event}
           onBack={() => go({ name: 'event', inviteCode: screen.inviteCode })}
           onRenamed={() => go({ name: 'event', inviteCode: screen.inviteCode })}
+          onLeft={() => go({ name: 'trips' })}
         />
       );
 

@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { api } from '../api';
 import { getAuth, saveAuth } from '../storage';
 import type { Lang, Strings } from '../i18n';
@@ -18,8 +18,6 @@ export default function Settings({ lang, s, onBack, onLanguageChange, onSignOut 
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
-  const fileRef = useRef<HTMLInputElement>(null);
-
   const dir = lang === 'ar' ? 'rtl' : 'ltr';
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -73,22 +71,26 @@ export default function Settings({ lang, s, onBack, onLanguageChange, onSignOut 
       <div style={{ flex: 1, overflowY: 'auto', padding: '24px 20px' }}>
         {/* Profile photo */}
         <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--sub)', marginBottom: 12 }}>{s.profilePhoto}</div>
-        <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handlePhotoChange} />
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24 }}>
-          <div
-            onClick={() => fileRef.current?.click()}
+          <label
             style={{
               width: 72, height: 72, borderRadius: '50%', cursor: 'pointer',
               background: photo ? 'transparent' : 'var(--accent)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               color: '#fff', fontSize: 28, fontWeight: 700, overflow: 'hidden', flexShrink: 0,
-              border: '2px dashed var(--line)',
+              border: '2px dashed var(--line)', position: 'relative',
             }}
           >
             {photo
               ? <img src={photo} alt="profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               : initial}
-          </div>
+            <input
+              type="file"
+              accept="image/*"
+              style={{ position: 'absolute', inset: 0, opacity: 0, width: '100%', height: '100%', cursor: 'pointer' }}
+              onChange={handlePhotoChange}
+            />
+          </label>
           <div>
             <div style={{ fontSize: 14, fontWeight: 700 }}>{s.tapToChange}</div>
             <div style={{ fontSize: 12, color: 'var(--sub)', marginTop: 3 }}>JPG, PNG — max 2MB</div>

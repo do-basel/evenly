@@ -23,6 +23,20 @@ router.post('/', async (req: Request, res: Response) => {
     try { user_id = verifyToken(authHeader.slice(7)).sub; } catch { /* ignore */ }
   }
 
+  // If authenticated, return existing membership instead of creating a duplicate
+  if (user_id) {
+    const existing = await db('members').where({ event_id: event.id, user_id }).first();
+    if (existing) {
+      return res.json({
+        id: existing.id,
+        name: existing.name,
+        photo_url: existing.photo_url,
+        member_token: existing.member_token,
+        event_id: existing.event_id,
+      });
+    }
+  }
+
   const [member] = await db('members')
     .insert({ event_id: event.id, name, photo_url: photo_url ?? null, user_id })
     .returning('*');

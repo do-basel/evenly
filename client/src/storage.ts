@@ -50,6 +50,11 @@ export function getMembership(inviteCode: string): StoredMembership | undefined 
   return getMemberships().find((m) => m.inviteCode === inviteCode);
 }
 
+export function removeMembership(inviteCode: string): void {
+  const list = getMemberships().filter((x) => x.inviteCode !== inviteCode);
+  localStorage.setItem(MEMBERSHIPS_KEY, JSON.stringify(list));
+}
+
 // Legacy profile shim — used by CreateTrip to get user name
 export interface Profile {
   name: string;
