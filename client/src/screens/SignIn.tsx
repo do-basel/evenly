@@ -1,3 +1,4 @@
+import Notch from '../components/Notch';
 import { useState } from 'react';
 import { saveProfile } from '../storage';
 
@@ -13,9 +14,9 @@ export default function SignIn({ onDone }: Props) {
   };
 
   return (
-    <div dir="rtl" style={{ height: '100%', minHeight: '844px', background: 'var(--bg)', display: 'flex', flexDirection: 'column', padding: '60px 24px 40px' }}>
+    <div dir="rtl" style={{ height: '100%', background: 'var(--bg)', display: 'flex', flexDirection: 'column', padding: '60px 24px 40px' }}>
       {/* Notch */}
-      <div style={{ position: 'absolute', top: 14, left: '50%', transform: 'translateX(-50%)', width: 90, height: 26, background: '#000', borderRadius: 14, zIndex: 30 }} />
+      <Notch />
 
       {/* Logo */}
       <div style={{ width: 62, height: 62, borderRadius: 18, background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-ink)', fontSize: 36, fontWeight: 800, marginBottom: 26, marginTop: 40 }}>÷</div>

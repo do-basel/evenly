@@ -1,3 +1,4 @@
+import Notch from '../components/Notch';
 import { useState } from 'react';
 
 interface Props {
@@ -17,8 +18,8 @@ export default function ShareLink({ inviteCode, eventName, onEnter }: Props) {
   };
 
   return (
-    <div dir="rtl" style={{ minHeight: '844px', background: 'var(--bg)', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '60px 24px 40px' }}>
-      <div style={{ position: 'absolute', top: 14, left: '50%', transform: 'translateX(-50%)', width: 90, height: 26, background: '#000', borderRadius: 14, zIndex: 30 }} />
+    <div dir="rtl" style={{ minHeight: '100%', background: 'var(--bg)', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '60px 24px 40px' }}>
+      <Notch />
 
       {/* Success icon */}
       <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'var(--positive)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 38, fontWeight: 800, margin: '40px 0 22px' }}>✓</div>

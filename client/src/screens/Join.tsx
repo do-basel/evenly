@@ -1,3 +1,4 @@
+import Notch from '../components/Notch';
 import { useState, useEffect } from 'react';
 import { api } from '../api';
 import { saveMembership, getMembership } from '../storage';
@@ -52,7 +53,7 @@ export default function Join({ inviteCode, onJoined }: Props) {
 
   if (fetching) {
     return (
-      <div dir="rtl" style={{ minHeight: '844px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)', fontSize: 16, color: 'var(--sub)' }}>
+      <div dir="rtl" style={{ minHeight: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)', fontSize: 16, color: 'var(--sub)' }}>
         جارٍ التحميل...
       </div>
     );
@@ -60,7 +61,7 @@ export default function Join({ inviteCode, onJoined }: Props) {
 
   if (!event && error) {
     return (
-      <div dir="rtl" style={{ minHeight: '844px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)', padding: 24, gap: 16 }}>
+      <div dir="rtl" style={{ minHeight: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)', padding: 24, gap: 16 }}>
         <div style={{ fontSize: 48 }}>😕</div>
         <div style={{ fontSize: 18, fontWeight: 700 }}>{error}</div>
         <div style={{ fontSize: 13, color: 'var(--sub)' }}>تحقق من الرابط وأعد المحاولة</div>
@@ -69,8 +70,8 @@ export default function Join({ inviteCode, onJoined }: Props) {
   }
 
   return (
-    <div dir="rtl" style={{ minHeight: '844px', background: 'var(--bg)', display: 'flex', flexDirection: 'column', padding: '60px 24px 40px' }}>
-      <div style={{ position: 'absolute', top: 14, left: '50%', transform: 'translateX(-50%)', width: 90, height: 26, background: '#000', borderRadius: 14, zIndex: 30 }} />
+    <div dir="rtl" style={{ minHeight: '100%', background: 'var(--bg)', display: 'flex', flexDirection: 'column', padding: '60px 24px 40px' }}>
+      <Notch />
 
       <div style={{ width: 62, height: 62, borderRadius: 18, background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-ink)', fontSize: 36, fontWeight: 800, marginBottom: 24, marginTop: 30 }}>÷</div>
 

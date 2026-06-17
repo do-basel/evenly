@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { api } from '../api';
 import { saveMembership, getProfile } from '../storage';
+import Notch from '../components/Notch';
 
 interface Props {
   onBack: () => void;
@@ -13,11 +14,24 @@ const CURRENCIES = [
   { code: 'EUR', label: '€' },
 ];
 
+const TRIP_EMOJIS = ['🏜️', '⛺️', '🏝️', '🗺️', '🏔️', '🌊', '🏕️', '✈️', '🎿', '🚗'];
+
 export default function CreateTrip({ onBack, onCreated }: Props) {
   const [name, setName] = useState('');
   const [currency, setCurrency] = useState('SAR');
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [emoji] = useState(() => TRIP_EMOJIS[Math.floor(Math.random() * TRIP_EMOJIS.length)]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setPhotoPreview(reader.result as string);
+    reader.readAsDataURL(file);
+  };
 
   const handleCreate = async () => {
     if (!name.trim()) { setError('أدخل اسم الرحلة'); return; }
@@ -45,8 +59,8 @@ export default function CreateTrip({ onBack, onCreated }: Props) {
   };
 
   return (
-    <div dir="rtl" style={{ minHeight: '844px', background: 'var(--bg)', display: 'flex', flexDirection: 'column', padding: '52px 24px 40px' }}>
-      <div style={{ position: 'absolute', top: 14, left: '50%', transform: 'translateX(-50%)', width: 90, height: 26, background: '#000', borderRadius: 14, zIndex: 30 }} />
+    <div dir="rtl" style={{ minHeight: '100%', background: 'var(--bg)', display: 'flex', flexDirection: 'column', padding: '52px 24px 40px' }}>
+      <Notch />
 
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32 }}>
@@ -54,11 +68,21 @@ export default function CreateTrip({ onBack, onCreated }: Props) {
         <button onClick={onBack} style={{ width: 34, height: 34, borderRadius: '50%', background: 'var(--chip)', border: '1px solid var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, color: 'var(--sub)', cursor: 'pointer' }}>×</button>
       </div>
 
-      {/* Trip photo placeholder */}
+      {/* Trip photo */}
       <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 28 }}>
-        <div style={{ width: 104, height: 104, borderRadius: 26, background: 'var(--chip)', border: '2px dashed var(--line)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5, color: 'var(--sub)', cursor: 'pointer' }}>
-          <span style={{ fontSize: 28 }}>🏔️</span>
-          <span style={{ fontSize: 11, fontWeight: 700 }}>صورة الرحلة</span>
+        <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handlePhotoChange} />
+        <div
+          onClick={() => fileRef.current?.click()}
+          style={{ width: 104, height: 104, borderRadius: 26, background: photoPreview ? 'transparent' : 'var(--chip)', border: '2px dashed var(--line)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5, color: 'var(--sub)', cursor: 'pointer', overflow: 'hidden', position: 'relative' }}
+        >
+          {photoPreview ? (
+            <img src={photoPreview} alt="trip" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          ) : (
+            <>
+              <span style={{ fontSize: 28 }}>{emoji}</span>
+              <span style={{ fontSize: 11, fontWeight: 700 }}>اضغط لإضافة صورة</span>
+            </>
+          )}
         </div>
       </div>
 
@@ -103,6 +127,7 @@ export default function CreateTrip({ onBack, onCreated }: Props) {
           width: '100%', height: 54, borderRadius: 'var(--r-btn)', background: loading ? 'var(--sub)' : 'var(--accent)',
           color: 'var(--accent-ink)', border: 'none', fontSize: 16, fontWeight: 700,
           fontFamily: 'var(--font-body)', boxShadow: 'var(--btn-shadow)', cursor: loading ? 'not-allowed' : 'pointer',
+          alignItems: 'center', justifyContent: 'center',
         }}
       >
         {loading ? 'جارٍ الإنشاء...' : 'إنشاء الرحلة'}

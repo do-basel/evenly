@@ -1,3 +1,4 @@
+import Notch from '../components/Notch';
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '../api';
 import { getMembership, formatCurrency } from '../storage';
@@ -70,8 +71,8 @@ export default function EventHome({ inviteCode, onBack, onAddExpense, onSettleme
   const shareLink = `${window.location.origin}/j/${inviteCode}`;
 
   return (
-    <div dir="rtl" style={{ minHeight: '844px', background: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
-      <div style={{ position: 'absolute', top: 14, left: '50%', transform: 'translateX(-50%)', width: 90, height: 26, background: '#000', borderRadius: 14, zIndex: 30 }} />
+    <div dir="rtl" style={{ height: '100%', background: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
+      <Notch />
 
       {/* Header */}
       <div style={{ padding: '52px 20px 16px', background: 'var(--surface)', borderBottom: '1px solid var(--line)' }}>
