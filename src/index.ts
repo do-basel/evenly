@@ -10,13 +10,10 @@ import expensesRouter from './routes/expenses';
 import settlementsRouter from './routes/settlements';
 import authRouter from './routes/auth';
 
-// Run pending migrations on every startup so Railway deploys self-migrate
-db.migrate.latest().then(() => {
-  console.log('Migrations up to date');
-}).catch((err) => {
-  console.error('Migration failed:', err);
-  process.exit(1);
-});
+// Apply additive schema changes that may not have been run via CLI
+db.raw('ALTER TABLE events ADD COLUMN IF NOT EXISTS photo_url TEXT')
+  .then(() => console.log('Schema ready'))
+  .catch((err: Error) => console.warn('Schema patch skipped:', err.message));
 
 const app = express();
 app.use(cors());
