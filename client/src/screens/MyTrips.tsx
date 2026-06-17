@@ -34,18 +34,18 @@ export default function MyTrips({ onCreateTrip, onOpenTrip, onSignOut }: Props) 
 
       {/* Header */}
       <div style={{ padding: '52px 20px 0', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-        <div>
+        <button
+          onClick={onSignOut}
+          style={{ width: 38, height: 38, borderRadius: '50%', background: 'var(--accent)', color: '#fff', border: 'none', fontSize: 15, fontWeight: 700, fontFamily: 'var(--font-body)', cursor: 'pointer', flexShrink: 0 }}
+        >
+          {initial}
+        </button>
+        <div style={{ textAlign: 'right' }}>
           <div style={{ fontSize: 26, fontWeight: 800, letterSpacing: '-0.01em' }}>رحلاتي</div>
           <div style={{ fontSize: 13, color: 'var(--sub)', fontWeight: 600, marginTop: 2 }}>
             {memberships.length} {memberships.length === 1 ? 'رحلة' : 'رحلات'}
           </div>
         </div>
-        <button
-          onClick={onSignOut}
-          style={{ width: 38, height: 38, borderRadius: '50%', background: 'var(--accent)', color: '#fff', border: 'none', fontSize: 15, fontWeight: 700, fontFamily: 'var(--font-body)', cursor: 'pointer' }}
-        >
-          {initial}
-        </button>
       </div>
 
       {/* Trips list */}

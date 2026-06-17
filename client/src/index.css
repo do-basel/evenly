@@ -48,7 +48,7 @@ body {
 
 input, button { font-family: var(--font-body); }
 input { display: block; }
-button { display: flex; }
+button { display: flex; align-items: center; justify-content: center; }
 
 @media (max-width: 440px) {
   body { padding: 0; background: var(--bg); height: 100dvh; }
