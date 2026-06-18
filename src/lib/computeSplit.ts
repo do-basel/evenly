@@ -1,4 +1,4 @@
-export type SplitType = 'equal' | 'percentage' | 'shares';
+export type SplitType = 'equal' | 'percentage' | 'shares' | 'manual';
 
 export interface SplitParticipant {
   memberId: string;
@@ -50,6 +50,13 @@ export function computeSplit(
       memberId: p.memberId,
       amountCents: raw[i] + (i < remainder ? 1 : 0),
     }));
+  }
+
+  if (splitType === 'manual') {
+    if (participants.some((p) => p.shareValue < 0)) throw new Error('Amounts cannot be negative');
+    const totalCents = participants.reduce((s, p) => s + p.shareValue, 0);
+    if (totalCents !== amountCents) throw new Error(`Manual amounts must sum to ${amountCents} cents`);
+    return participants.map((p) => ({ memberId: p.memberId, amountCents: p.shareValue }));
   }
 
   throw new Error(`Unknown split type: ${splitType}`);

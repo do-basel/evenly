@@ -35,7 +35,7 @@ export interface Expense {
   amount_cents: number;
   paid_by: string;
   created_by: string;
-  split_type: 'equal' | 'percentage' | 'shares';
+  split_type: 'equal' | 'percentage' | 'shares' | 'manual';
   created_at: string;
 }
 

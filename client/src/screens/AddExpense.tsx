@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { api } from '../api';
 import { getMembership } from '../storage';
-// removed unused: formatCurrency from '../storage';
-import type { Event } from '../types';
+import type { Event, ExpenseWithSplits } from '../types';
 import type { Lang, Strings } from '../i18n';
 
 interface Props {
@@ -11,22 +10,49 @@ interface Props {
   dir: string;
   inviteCode: string;
   event: Event;
+  expense?: ExpenseWithSplits;
   onBack: () => void;
   onSaved: () => void;
 }
 
-type SplitType = 'equal' | 'percentage' | 'shares';
+type SplitType = 'equal' | 'percentage' | 'manual';
 
-export default function AddExpense({ lang: _lang, s, dir, inviteCode, event, onBack, onSaved }: Props) {
+function normalizeSplitType(t: string): SplitType {
+  if (t === 'percentage') return 'percentage';
+  if (t === 'manual' || t === 'shares') return 'manual';
+  return 'equal';
+}
+
+function initOverrides(expense: ExpenseWithSplits): Record<string, string> {
+  const st = normalizeSplitType(expense.split_type);
+  if (st === 'percentage') {
+    return Object.fromEntries(expense.splits.map((sp) => [sp.member_id, String(sp.share_value)]));
+  }
+  if (st === 'manual') {
+    return Object.fromEntries(expense.splits.map((sp) => [sp.member_id, (sp.amount_cents / 100).toFixed(2)]));
+  }
+  return {};
+}
+
+export default function AddExpense({ lang: _lang, s, dir, inviteCode, event, expense, onBack, onSaved }: Props) {
+  const isEdit = !!expense;
   const membership = getMembership(inviteCode);
-  const [description, setDescription] = useState('');
-  const [amountStr, setAmountStr] = useState('');
-  const [paidBy, setPaidBy] = useState(membership?.memberId ?? event.members[0]?.id ?? '');
-  const [splitType, setSplitType] = useState<SplitType>('equal');
-  const [selectedForEqual, setSelectedForEqual] = useState<Set<string>>(
-    () => new Set(event.members.map((m) => m.id))
+
+  const [description, setDescription] = useState(expense?.description ?? '');
+  const [amountStr, setAmountStr] = useState(expense ? (expense.amount_cents / 100).toFixed(2) : '');
+  const [paidBy, setPaidBy] = useState(expense?.paid_by ?? membership?.memberId ?? event.members[0]?.id ?? '');
+  const [splitType, setSplitType] = useState<SplitType>(() =>
+    expense ? normalizeSplitType(expense.split_type) : 'equal'
   );
-  const [overrides, setOverrides] = useState<Record<string, string>>({});
+  const [selectedForEqual, setSelectedForEqual] = useState<Set<string>>(() => {
+    if (expense && normalizeSplitType(expense.split_type) === 'equal') {
+      return new Set(expense.splits.map((sp) => sp.member_id));
+    }
+    return new Set(event.members.map((m) => m.id));
+  });
+  const [overrides, setOverrides] = useState<Record<string, string>>(() =>
+    expense ? initOverrides(expense) : {}
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -46,10 +72,22 @@ export default function AddExpense({ lang: _lang, s, dir, inviteCode, event, onB
       return;
     }
 
-    const participants = activeMembers.map((m) => ({
-      memberId: m.id,
-      shareValue: splitType === 'equal' ? 1 : Number(overrides[m.id] ?? 0),
-    }));
+    if (splitType === 'manual') {
+      const totalEntered = event.members.reduce((sum, m) => sum + Math.round(Number(overrides[m.id] ?? 0) * 100), 0);
+      if (totalEntered !== amountCents) {
+        setError(dir === 'rtl' ? 'مجموع المبالغ يجب أن يساوي الإجمالي' : 'Amounts must sum to the total');
+        return;
+      }
+    }
+
+    const participants = splitType === 'manual'
+      ? event.members
+          .filter((m) => Number(overrides[m.id] ?? 0) > 0)
+          .map((m) => ({ memberId: m.id, shareValue: Math.round(Number(overrides[m.id]) * 100) }))
+      : activeMembers.map((m) => ({
+          memberId: m.id,
+          shareValue: splitType === 'equal' ? 1 : Number(overrides[m.id] ?? 0),
+        }));
 
     if (splitType === 'percentage') {
       const total = participants.reduce((sum, p) => sum + p.shareValue, 0);
@@ -59,13 +97,18 @@ export default function AddExpense({ lang: _lang, s, dir, inviteCode, event, onB
     setLoading(true);
     setError('');
     try {
-      await api.addExpense(inviteCode, membership.memberToken, {
+      const data = {
         description: description.trim(),
         amount_cents: amountCents,
         paid_by: paidBy,
         split_type: splitType,
         participants,
-      });
+      };
+      if (isEdit && expense) {
+        await api.updateExpense(expense.id, membership.memberToken, data);
+      } else {
+        await api.addExpense(inviteCode, membership.memberToken, data);
+      }
       onSaved();
     } catch (e: any) {
       setError(e.message ?? 'حدث خطأ');
@@ -77,7 +120,7 @@ export default function AddExpense({ lang: _lang, s, dir, inviteCode, event, onB
   const SPLIT_LABELS: Record<SplitType, string> = {
     equal: s.equally,
     percentage: s.byPercent,
-    shares: s.byShares,
+    manual: s.byShares,
   };
 
   return (
@@ -86,7 +129,7 @@ export default function AddExpense({ lang: _lang, s, dir, inviteCode, event, onB
         <button onClick={onBack} style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--chip)', border: '1px solid var(--line)', fontSize: 16, cursor: 'pointer', color: 'var(--ink)', flexShrink: 0 }}>
           {dir === 'rtl' ? '→' : '←'}
         </button>
-        <div style={{ fontSize: 20, fontWeight: 800 }}>{s.newExpense}</div>
+        <div style={{ fontSize: 20, fontWeight: 800 }}>{isEdit ? s.editExpense : s.newExpense}</div>
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '0 20px' }}>
@@ -100,8 +143,7 @@ export default function AddExpense({ lang: _lang, s, dir, inviteCode, event, onB
 
         <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--sub)', marginBottom: 9 }}>{s.amount} ({event.currency})</div>
         <input
-          type="number"
-          inputMode="decimal"
+          type="number" inputMode="decimal"
           value={amountStr}
           onChange={(e) => setAmountStr(e.target.value)}
           placeholder="0.00"
@@ -121,7 +163,7 @@ export default function AddExpense({ lang: _lang, s, dir, inviteCode, event, onB
 
         <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--sub)', marginBottom: 9 }}>{s.splitMethod}</div>
         <div style={{ display: 'flex', gap: 8, background: 'var(--chip)', borderRadius: 'var(--r-pill)', padding: 4, marginBottom: 20 }}>
-          {(['equal', 'percentage', 'shares'] as SplitType[]).map((tp) => (
+          {(['equal', 'percentage', 'manual'] as SplitType[]).map((tp) => (
             <button
               key={tp}
               onClick={() => setSplitType(tp)}
@@ -177,26 +219,53 @@ export default function AddExpense({ lang: _lang, s, dir, inviteCode, event, onB
           </div>
         )}
 
-        {splitType !== 'equal' && (
+        {splitType === 'percentage' && (
           <div style={{ marginBottom: 20 }}>
-            <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--sub)', marginBottom: 10 }}>
-              {splitType === 'percentage' ? s.percentTotal : s.shares}
-            </div>
+            <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--sub)', marginBottom: 10 }}>{s.percentTotal}</div>
             {event.members.map((m) => (
               <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
                 <div style={{ flex: 1, fontSize: 14, fontWeight: 600 }}>{m.name}</div>
                 <input
-                  type="number"
-                  inputMode="decimal"
+                  type="number" inputMode="decimal"
                   value={overrides[m.id] ?? ''}
                   onChange={(e) => setOverrides((prev) => ({ ...prev, [m.id]: e.target.value }))}
-                  placeholder={splitType === 'percentage' ? '%' : '#'}
+                  placeholder="%"
                   style={{ width: 80, background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--r-input)', padding: '10px 12px', fontSize: 14, fontWeight: 600, color: 'var(--ink)', outline: 'none', direction: 'ltr', textAlign: 'center', fontFamily: 'Hanken Grotesk, sans-serif' }}
                 />
               </div>
             ))}
           </div>
         )}
+
+        {splitType === 'manual' && (() => {
+          const enteredCents = event.members.reduce((sum, m) => sum + Math.round(Number(overrides[m.id] ?? 0) * 100), 0);
+          const remainingCents = amountCents - enteredCents;
+          const remainingColor = remainingCents === 0 ? 'var(--positive)' : remainingCents < 0 ? 'var(--negative)' : 'var(--ink)';
+          return (
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, background: 'var(--chip)', borderRadius: 'var(--r-input)', padding: '10px 14px' }}>
+                <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--sub)' }}>
+                  {dir === 'rtl' ? 'المتبقي للتوزيع' : 'Remaining to assign'}
+                </div>
+                <div style={{ fontSize: 16, fontWeight: 800, color: remainingColor, fontFamily: 'Hanken Grotesk, sans-serif' }}>
+                  {(remainingCents / 100).toFixed(2)} {event.currency}
+                </div>
+              </div>
+              {event.members.map((m) => (
+                <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                  <div style={{ flex: 1, fontSize: 14, fontWeight: 600 }}>{m.name}{m.id === membership?.memberId ? <span style={{ fontSize: 11, color: 'var(--sub)', marginRight: 4 }}> ({s.you})</span> : ''}</div>
+                  <input
+                    type="number" inputMode="decimal"
+                    value={overrides[m.id] ?? ''}
+                    onChange={(e) => setOverrides((prev) => ({ ...prev, [m.id]: e.target.value }))}
+                    placeholder="0.00"
+                    style={{ width: 90, background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--r-input)', padding: '10px 12px', fontSize: 14, fontWeight: 600, color: 'var(--ink)', outline: 'none', direction: 'ltr', textAlign: 'center', fontFamily: 'Hanken Grotesk, sans-serif' }}
+                  />
+                </div>
+              ))}
+            </div>
+          );
+        })()}
 
         {error && <div style={{ color: 'var(--negative)', fontSize: 13, fontWeight: 600, marginBottom: 12 }}>{error}</div>}
       </div>
@@ -207,7 +276,7 @@ export default function AddExpense({ lang: _lang, s, dir, inviteCode, event, onB
           disabled={loading}
           style={{ width: '100%', height: 54, borderRadius: 'var(--r-btn)', background: loading ? 'var(--sub)' : 'var(--accent)', color: '#fff', border: 'none', fontSize: 16, fontWeight: 700, fontFamily: 'var(--font-body)', boxShadow: 'var(--btn-shadow)', cursor: loading ? 'not-allowed' : 'pointer' }}
         >
-          {loading ? s.saving2 : s.save}
+          {loading ? s.savingEdit : isEdit ? s.saveEdit : s.save}
         </button>
       </div>
     </div>

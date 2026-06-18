@@ -22,6 +22,7 @@ export type Screen =
   | { name: 'event'; inviteCode: string }
   | { name: 'join'; inviteCode: string }
   | { name: 'addexpense'; inviteCode: string; event: Event }
+  | { name: 'editexpense'; inviteCode: string; event: Event; expense: import('./types').ExpenseWithSplits }
   | { name: 'settlement'; inviteCode: string; event: Event }
   | { name: 'settings' }
   | { name: 'tripsettings'; inviteCode: string; event: import('./types').Event };
@@ -99,6 +100,7 @@ export default function App() {
           inviteCode={screen.inviteCode}
           onBack={() => go({ name: 'trips' })}
           onAddExpense={(event) => go({ name: 'addexpense', inviteCode: screen.inviteCode, event })}
+          onEditExpense={(event, expense) => go({ name: 'editexpense', inviteCode: screen.inviteCode, event, expense })}
           onSettlement={(event) => go({ name: 'settlement', inviteCode: screen.inviteCode, event })}
           onTripSettings={(event) => go({ name: 'tripsettings', inviteCode: screen.inviteCode, event })}
         />
@@ -131,6 +133,18 @@ export default function App() {
           lang={lang} s={s} dir={dir}
           inviteCode={screen.inviteCode}
           event={screen.event}
+          onBack={() => go({ name: 'event', inviteCode: screen.inviteCode })}
+          onSaved={() => go({ name: 'event', inviteCode: screen.inviteCode })}
+        />
+      );
+
+    case 'editexpense':
+      return (
+        <AddExpense
+          lang={lang} s={s} dir={dir}
+          inviteCode={screen.inviteCode}
+          event={screen.event}
+          expense={screen.expense}
           onBack={() => go({ name: 'event', inviteCode: screen.inviteCode })}
           onSaved={() => go({ name: 'event', inviteCode: screen.inviteCode })}
         />

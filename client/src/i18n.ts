@@ -74,7 +74,7 @@ const strings = {
     splitMethod: 'طريقة القسمة',
     equally: 'بالتساوي',
     byPercent: 'بالنسبة %',
-    byShares: 'بالحصص',
+    byShares: 'يدوي',
     save: 'حفظ المصروف',
     saving2: 'جارٍ الحفظ...',
     delete: 'حذف',
@@ -94,6 +94,9 @@ const strings = {
     namePlaceholder: 'مثال: أحمد',
     tripNamePlaceholder: 'مثال: رحلة العلا ٢٦',
     expenseDescPlaceholder: 'مثال: عشاء، تاكسي...',
+    editExpense: 'تعديل المصروف',
+    saveEdit: 'حفظ التعديلات',
+    savingEdit: 'جارٍ الحفظ...',
   },
   en: {
     appName: 'Evenly',
@@ -168,7 +171,7 @@ const strings = {
     splitMethod: 'Split method',
     equally: 'Equally',
     byPercent: 'By %',
-    byShares: 'By shares',
+    byShares: 'Manual',
     save: 'Save expense',
     saving2: 'Saving...',
     delete: 'Delete',
@@ -188,6 +191,9 @@ const strings = {
     namePlaceholder: 'e.g. Ahmed',
     tripNamePlaceholder: 'e.g. Dubai trip 2026',
     expenseDescPlaceholder: 'e.g. Dinner, Taxi...',
+    editExpense: 'Edit expense',
+    saveEdit: 'Save changes',
+    savingEdit: 'Saving...',
   },
 };
 

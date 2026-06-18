@@ -11,6 +11,7 @@ interface Props {
   inviteCode: string;
   onBack: () => void;
   onAddExpense: (event: Event) => void;
+  onEditExpense: (event: Event, expense: ExpenseWithSplits) => void;
   onSettlement: (event: Event) => void;
   onTripSettings: (event: Event) => void;
 }
@@ -25,7 +26,7 @@ function Avatar({ name, photo, size = 36 }: { name: string; photo?: string | nul
   );
 }
 
-export default function EventHome({ lang: _lang, s, dir, inviteCode, onBack, onAddExpense, onSettlement, onTripSettings }: Props) {
+export default function EventHome({ lang: _lang, s, dir, inviteCode, onBack, onAddExpense, onEditExpense, onSettlement, onTripSettings }: Props) {
   const [event, setEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState(true);
   const [copiedLink, setCopiedLink] = useState(false);
@@ -182,6 +183,7 @@ export default function EventHome({ lang: _lang, s, dir, inviteCode, onBack, onA
               memberName={memberName}
               myMemberId={myId}
               s={s}
+              onEdit={() => onEditExpense(event, expense)}
             />
           ));
         })()}
@@ -206,14 +208,16 @@ export default function EventHome({ lang: _lang, s, dir, inviteCode, onBack, onA
   );
 }
 
-function ExpenseCard({ expense, currency, memberName, myMemberId, s }: {
+function ExpenseCard({ expense, currency, memberName, myMemberId, s, onEdit }: {
   expense: ExpenseWithSplits;
   currency: string;
   memberName: (id: string) => string;
   myMemberId?: string;
   s: Strings;
+  onEdit: () => void;
 }) {
   const mySplit = expense.splits.find((sp) => sp.member_id === myMemberId);
+  const isMyExpense = expense.created_by === myMemberId;
 
   return (
     <div style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--r-card)', padding: '13px 14px', marginBottom: 10 }}>
@@ -224,7 +228,7 @@ function ExpenseCard({ expense, currency, memberName, myMemberId, s }: {
             {s.paidByMember} {memberName(expense.paid_by)}
           </div>
         </div>
-        <div style={{ textAlign: 'left', flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+        <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
           <div style={{ fontSize: 16, fontWeight: 800, fontFamily: 'Hanken Grotesk, sans-serif' }}>
             {formatCurrency(expense.amount_cents, currency)}
           </div>
@@ -232,6 +236,14 @@ function ExpenseCard({ expense, currency, memberName, myMemberId, s }: {
             <div style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--sub)' }}>
               {s.myShare}: {formatCurrency(mySplit.amount_cents, currency)}
             </div>
+          )}
+          {isMyExpense && (
+            <button
+              onClick={onEdit}
+              style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)', background: 'transparent', border: 'none', cursor: 'pointer', padding: '2px 0', fontFamily: 'var(--font-body)' }}
+            >
+              {s.editExpense} ✎
+            </button>
           )}
         </div>
       </div>

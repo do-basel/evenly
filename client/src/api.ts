@@ -61,6 +61,23 @@ export const api = {
       body: JSON.stringify(data),
     }),
 
+  updateExpense: (
+    expenseId: string,
+    memberToken: string,
+    data: {
+      description: string;
+      amount_cents: number;
+      paid_by: string;
+      split_type: string;
+      participants: { memberId: string; shareValue: number }[];
+    }
+  ) =>
+    req(`/api/expenses/${expenseId}`, {
+      method: 'PUT',
+      headers: { 'X-Member-Token': memberToken },
+      body: JSON.stringify(data),
+    }),
+
   deleteExpense: (_inviteCode: string, expenseId: string, memberToken: string) =>
     req(`/api/expenses/${expenseId}`, {
       method: 'DELETE',
