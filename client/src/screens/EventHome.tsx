@@ -48,7 +48,7 @@ export default function EventHome({ lang: _lang, s, dir, inviteCode, onBack, onA
 
   const load = useCallback(async () => {
     try {
-      const e = await api.getEvent(inviteCode) as Event;
+      const e = await api.getEvent(inviteCode, membership?.memberToken) as Event;
       setEvent(e);
       // Seed my photo from member list
       if (membership) {

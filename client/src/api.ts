@@ -35,8 +35,8 @@ export const api = {
   createEvent: (name: string, currency: string) =>
     req('/api/events', { method: 'POST', body: JSON.stringify({ name, currency }) }),
 
-  getEvent: (inviteCode: string) =>
-    req(`/api/events/${inviteCode}`),
+  getEvent: (inviteCode: string, memberToken?: string) =>
+    req(`/api/events/${inviteCode}`, memberToken ? { headers: { 'X-Member-Token': memberToken } } : undefined),
 
   joinEvent: (inviteCode: string, name: string, photo_url?: string) =>
     req(`/api/events/${inviteCode}/members`, {

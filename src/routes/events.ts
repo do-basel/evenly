@@ -35,6 +35,25 @@ router.get('/:inviteCode', async (req: Request, res: Response) => {
     )
     .orderBy('members.created_at', 'asc');
 
+  // Identify the requesting member (via token or JWT)
+  let callerMemberId: string | null = null;
+  const memberToken = req.headers['x-member-token'] as string | undefined;
+  if (memberToken) {
+    const m = await db('members').where({ member_token: memberToken, event_id: event.id }).first();
+    if (m) callerMemberId = m.id;
+  }
+  if (!callerMemberId) {
+    const authHeader = req.headers['authorization'];
+    if (authHeader?.startsWith('Bearer ')) {
+      try {
+        const { verifyToken } = await import('../lib/jwt');
+        const { sub } = verifyToken(authHeader.slice(7));
+        const m = await db('members').where({ user_id: sub, event_id: event.id }).first();
+        if (m) callerMemberId = m.id;
+      } catch { /* ignore */ }
+    }
+  }
+
   const expenses = await db('expenses')
     .where({ event_id: event.id })
     .orderBy('created_at', 'asc');
@@ -55,12 +74,20 @@ router.get('/:inviteCode', async (req: Request, res: Response) => {
     }
   }
 
-  const expensesWithSplits = expenses.map((e) => ({
+  const allExpensesWithSplits = expenses.map((e) => ({
     ...e,
     splits: splits.filter((s) => s.expense_id === e.id),
   }));
 
-  res.json({ ...event, members, expenses: expensesWithSplits, balances, settlement });
+  // Only return expenses the caller is involved in
+  const visibleExpenses = callerMemberId
+    ? allExpensesWithSplits.filter((e) =>
+        e.paid_by === callerMemberId ||
+        e.splits.some((sp: { member_id: string }) => sp.member_id === callerMemberId)
+      )
+    : allExpensesWithSplits;
+
+  res.json({ ...event, members, expenses: visibleExpenses, balances, settlement });
 });
 
 // PATCH /api/events/:inviteCode — rename trip (any member with valid token)
