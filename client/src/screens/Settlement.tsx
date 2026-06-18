@@ -21,8 +21,8 @@ export default function Settlement({ lang: _lang, s, dir, inviteCode, event, onB
   const memberName = (id: string) => members.find((m) => m.id === id)?.name ?? id;
   const memberPhoto = (id: string) => members.find((m) => m.id === id)?.photo_url ?? null;
 
-  // Only debts where I'm the one paying
   const myDebts = settlement.filter((p) => p.fromMemberId === myId);
+  const owedToMe = settlement.filter((p) => p.toMemberId === myId);
 
   const [settling, setSettling] = useState<string | null>(null);
   const [amountStr, setAmountStr] = useState('');
@@ -55,6 +55,15 @@ export default function Settlement({ lang: _lang, s, dir, inviteCode, event, onB
     }
   };
 
+  const Avatar = ({ id }: { id: string }) => {
+    const photo = memberPhoto(id);
+    return (
+      <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, flexShrink: 0, overflow: 'hidden' }}>
+        {photo ? <img src={photo} alt={memberName(id)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : memberName(id)[0]}
+      </div>
+    );
+  };
+
   return (
     <div dir={dir} style={{ height: '100%', background: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
       <div style={{ padding: '52px 20px 16px', display: 'flex', alignItems: 'center', gap: 12, borderBottom: '1px solid var(--line)' }}>
@@ -68,46 +77,39 @@ export default function Settlement({ lang: _lang, s, dir, inviteCode, event, onB
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
-        {/* My debts */}
+
+        {/* I owe */}
         <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--sub)', marginBottom: 12 }}>{s.myDebts}</div>
 
         {myDebts.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '32px 0', fontSize: 15, fontWeight: 700, color: 'var(--positive)' }}>
+          <div style={{ textAlign: 'center', padding: '16px 0 28px', fontSize: 14, fontWeight: 700, color: 'var(--positive)' }}>
             {s.noDebts}
           </div>
         ) : (
           myDebts.map((p) => {
             const key = p.toMemberId;
             const isSettled = settled.has(key);
-            const photo = memberPhoto(p.toMemberId);
             return (
               <div key={key} style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--r-card)', padding: '14px 16px', marginBottom: 12 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  {/* Recipient avatar */}
-                  <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, flexShrink: 0, overflow: 'hidden' }}>
-                    {photo
-                      ? <img src={photo} alt={memberName(p.toMemberId)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      : memberName(p.toMemberId)[0]}
-                  </div>
+                  <Avatar id={p.toMemberId} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 12, color: 'var(--sub)', fontWeight: 600 }}>{s.iOwe}</div>
                     <div style={{ fontSize: 15, fontWeight: 800 }}>{memberName(p.toMemberId)}</div>
                   </div>
-                  <div style={{ textAlign: dir === 'rtl' ? 'left' : 'right', flexShrink: 0 }}>
+                  <div style={{ flexShrink: 0 }}>
                     <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--negative)', fontFamily: 'Hanken Grotesk, sans-serif' }}>
                       {formatCurrency(p.amountCents, currency)}
                     </div>
                   </div>
                 </div>
 
-                {/* Settle controls */}
                 {isSettled ? (
                   <div style={{ marginTop: 12, padding: '10px 14px', background: '#EEF7F1', borderRadius: 'var(--r-input)', fontSize: 13, fontWeight: 700, color: 'var(--positive)', textAlign: 'center' }}>
                     {s.settledSuccess}
                   </div>
                 ) : settling === key ? (
                   <div style={{ marginTop: 12 }}>
-                    {/* Full / Partial toggle */}
                     <div style={{ display: 'flex', gap: 8, background: 'var(--chip)', borderRadius: 'var(--r-pill)', padding: 3, marginBottom: 10 }}>
                       <button
                         onClick={() => { setPartial(false); setAmountStr((p.amountCents / 100).toFixed(2)); }}
@@ -122,11 +124,9 @@ export default function Settlement({ lang: _lang, s, dir, inviteCode, event, onB
                         {s.partialAmount}
                       </button>
                     </div>
-
                     <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--sub)', marginBottom: 6 }}>{s.amountToPay} ({currency})</div>
                     <input
-                      type="number"
-                      inputMode="decimal"
+                      type="number" inputMode="decimal"
                       value={amountStr}
                       onChange={(e) => setAmountStr(e.target.value)}
                       style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--line)', borderRadius: 'var(--r-input)', padding: '11px 14px', fontSize: 16, fontWeight: 700, color: 'var(--ink)', outline: 'none', direction: 'ltr', textAlign: 'left', marginBottom: 8, fontFamily: 'Hanken Grotesk, sans-serif' }}
@@ -161,34 +161,29 @@ export default function Settlement({ lang: _lang, s, dir, inviteCode, event, onB
           })
         )}
 
-        {/* All balances summary */}
-        {event.balances.length > 0 && (
-          <>
-            <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--sub)', marginBottom: 12, marginTop: 28 }}>{s.members}</div>
-            {event.balances.map((b) => (
-              <div key={b.memberId} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--r-card)', padding: '12px 14px', marginBottom: 8 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, overflow: 'hidden' }}>
-                    {memberPhoto(b.memberId)
-                      ? <img src={memberPhoto(b.memberId)!} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      : memberName(b.memberId)[0]}
+        {/* Owed to me */}
+        <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--sub)', marginBottom: 12, marginTop: 24 }}>{s.owedToMe}</div>
+
+        {owedToMe.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '16px 0', fontSize: 14, fontWeight: 700, color: 'var(--sub)' }}>
+            {s.noOneOwesMe}
+          </div>
+        ) : (
+          owedToMe.map((p) => (
+            <div key={p.fromMemberId} style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--r-card)', padding: '14px 16px', marginBottom: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <Avatar id={p.fromMemberId} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 12, color: 'var(--sub)', fontWeight: 600 }}>{memberName(p.fromMemberId)} {s.owesMe}</div>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--positive)', fontFamily: 'Hanken Grotesk, sans-serif', marginTop: 2 }}>
+                    {formatCurrency(p.amountCents, currency)}
                   </div>
-                  <div style={{ fontSize: 14, fontWeight: 700 }}>{memberName(b.memberId)}{b.memberId === myId && <span style={{ fontSize: 11, color: 'var(--sub)', marginRight: 5 }}> (أنت)</span>}</div>
-                </div>
-                <div style={{ fontSize: 15, fontWeight: 800, color: b.netCents >= 0 ? 'var(--positive)' : 'var(--negative)', fontFamily: 'Hanken Grotesk, sans-serif' }}>
-                  {b.netCents >= 0 ? '+' : ''}{formatCurrency(b.netCents, currency)}
                 </div>
               </div>
-            ))}
-          </>
+            </div>
+          ))
         )}
 
-        {event.balances.length === 0 && (
-          <div style={{ textAlign: 'center', padding: '48px 0', color: 'var(--sub)', fontSize: 14, fontWeight: 600 }}>
-            <div style={{ fontSize: 40, marginBottom: 10 }}>🧾</div>
-            {s.noExpenses}
-          </div>
-        )}
       </div>
 
       <div style={{ padding: '16px 20px 32px' }}>

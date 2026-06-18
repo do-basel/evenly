@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import db from '../db/knex';
 import { v4 as uuidv4 } from 'uuid';
 import { computeBalances } from '../lib/computeBalances';
-import { simplifyDebts } from '../lib/simplifyDebts';
+import { computeDirectDebts } from '../lib/computeDirectDebts';
 
 const router = Router();
 
@@ -68,7 +68,7 @@ router.get('/:inviteCode', async (req: Request, res: Response) => {
   if (expenses.length && splits.length) {
     try {
       balances = computeBalances(expenses, splits);
-      settlement = simplifyDebts(balances);
+      settlement = computeDirectDebts(expenses, splits);
     } catch (_) {
       // return empty if invariant fails (e.g. partial data)
     }

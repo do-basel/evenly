@@ -1,8 +1,7 @@
 import { Router, Request, Response } from 'express';
 import db from '../db/knex';
 import { requireMemberToken } from '../middleware/auth';
-import { computeBalances } from '../lib/computeBalances';
-import { simplifyDebts } from '../lib/simplifyDebts';
+import { computeDirectDebts } from '../lib/computeDirectDebts';
 
 const router = Router({ mergeParams: true });
 
@@ -24,15 +23,7 @@ router.get('/', async (req: Request, res: Response) => {
   const nameMap: Record<string, string> = {};
   for (const m of members) nameMap[m.id] = m.name;
 
-  let balances;
-  try {
-    balances = computeBalances(expenses, splits);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-    return;
-  }
-
-  const payments = simplifyDebts(balances);
+  const payments = computeDirectDebts(expenses, splits);
 
   res.json(
     payments.map((p) => ({
