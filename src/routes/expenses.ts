@@ -11,7 +11,7 @@ async function getEvent(inviteCode: string) {
 
 // POST /api/events/:inviteCode/expenses
 router.post('/', requireMemberToken, async (req: Request, res: Response) => {
-  const { description, amount_cents, paid_by, split_type, participants } = req.body;
+  const { description, amount_cents, paid_by, split_type, participants, receipt_url } = req.body;
 
   if (!description || amount_cents == null || !paid_by || !split_type || !participants?.length) {
     res.status(400).json({ error: 'description, amount_cents, paid_by, split_type, participants required' });
@@ -44,6 +44,7 @@ router.post('/', requireMemberToken, async (req: Request, res: Response) => {
         paid_by,
         created_by: caller.id,
         split_type,
+        ...(receipt_url !== undefined && { receipt_url }),
       })
       .returning('*');
 
@@ -70,7 +71,7 @@ router.put('/:id', requireMemberToken, async (req: Request, res: Response) => {
     return;
   }
 
-  const { description, amount_cents, split_type, participants } = req.body;
+  const { description, amount_cents, split_type, participants, receipt_url } = req.body;
   const newAmount = amount_cents != null ? Number(amount_cents) : expense.amount_cents;
   const newSplitType: SplitType = split_type ?? expense.split_type;
 
@@ -81,6 +82,7 @@ router.put('/:id', requireMemberToken, async (req: Request, res: Response) => {
         description: description ?? expense.description,
         amount_cents: newAmount,
         split_type: newSplitType,
+        ...(receipt_url !== undefined && { receipt_url }),
       })
       .returning('*');
 

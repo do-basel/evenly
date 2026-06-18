@@ -100,6 +100,9 @@ const strings = {
     editExpense: 'تعديل المصروف',
     saveEdit: 'حفظ التعديلات',
     savingEdit: 'جارٍ الحفظ...',
+    addReceipt: 'إرفاق صورة الفاتورة',
+    receiptAdded: 'تمت إضافة الصورة ✓',
+    viewReceipt: 'عرض الفاتورة',
   },
   en: {
     appName: 'Evenly',
@@ -200,6 +203,9 @@ const strings = {
     editExpense: 'Edit expense',
     saveEdit: 'Save changes',
     savingEdit: 'Saving...',
+    addReceipt: 'Attach receipt photo',
+    receiptAdded: 'Photo added ✓',
+    viewReceipt: 'View receipt',
   },
 };
 

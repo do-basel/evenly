@@ -36,6 +36,7 @@ export interface Expense {
   paid_by: string;
   created_by: string;
   split_type: 'equal' | 'percentage' | 'shares' | 'manual';
+  receipt_url?: string | null;
   created_at: string;
 }
 

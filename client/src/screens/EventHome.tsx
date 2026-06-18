@@ -216,37 +216,70 @@ function ExpenseCard({ expense, currency, memberName, myMemberId, s, onEdit }: {
   s: Strings;
   onEdit: () => void;
 }) {
+  const [showReceipt, setShowReceipt] = useState(false);
   const mySplit = expense.splits.find((sp) => sp.member_id === myMemberId);
   const isMyExpense = expense.created_by === myMemberId;
 
   return (
-    <div style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--r-card)', padding: '13px 14px', marginBottom: 10 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 15, fontWeight: 700 }}>{expense.description}</div>
-          <div style={{ fontSize: 12, color: 'var(--sub)', fontWeight: 600, marginTop: 3 }}>
-            {s.paidByMember} {memberName(expense.paid_by)}
-          </div>
-        </div>
-        <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
-          <div style={{ fontSize: 16, fontWeight: 800, fontFamily: 'Hanken Grotesk, sans-serif' }}>
-            {formatCurrency(expense.amount_cents, currency)}
-          </div>
-          {mySplit && (
-            <div style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--sub)' }}>
-              {s.myShare}: {formatCurrency(mySplit.amount_cents, currency)}
+    <>
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--r-card)', padding: '13px 14px', marginBottom: 10 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 15, fontWeight: 700 }}>{expense.description}</div>
+            <div style={{ fontSize: 12, color: 'var(--sub)', fontWeight: 600, marginTop: 3 }}>
+              {s.paidByMember} {memberName(expense.paid_by)}
             </div>
-          )}
-          {isMyExpense && (
-            <button
-              onClick={onEdit}
-              style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)', background: 'transparent', border: 'none', cursor: 'pointer', padding: '2px 0', fontFamily: 'var(--font-body)' }}
-            >
-              {s.editExpense} ✎
-            </button>
-          )}
+          </div>
+          <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
+            <div style={{ fontSize: 16, fontWeight: 800, fontFamily: 'Hanken Grotesk, sans-serif' }}>
+              {formatCurrency(expense.amount_cents, currency)}
+            </div>
+            {mySplit && (
+              <div style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--sub)' }}>
+                {s.myShare}: {formatCurrency(mySplit.amount_cents, currency)}
+              </div>
+            )}
+            <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+              {expense.receipt_url && (
+                <button
+                  onClick={() => setShowReceipt(true)}
+                  style={{ fontSize: 11, fontWeight: 700, color: 'var(--sub)', background: 'transparent', border: 'none', cursor: 'pointer', padding: '2px 0', fontFamily: 'var(--font-body)' }}
+                >
+                  🧾 {s.viewReceipt}
+                </button>
+              )}
+              {isMyExpense && (
+                <button
+                  onClick={onEdit}
+                  style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)', background: 'transparent', border: 'none', cursor: 'pointer', padding: '2px 0', fontFamily: 'var(--font-body)' }}
+                >
+                  {s.editExpense} ✎
+                </button>
+              )}
+            </div>
+          </div>
         </div>
       </div>
-    </div>
+
+      {/* Receipt full-screen overlay */}
+      {showReceipt && expense.receipt_url && (
+        <div
+          onClick={() => setShowReceipt(false)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.88)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
+        >
+          <img
+            src={expense.receipt_url}
+            alt="receipt"
+            style={{ maxWidth: '100%', maxHeight: '90dvh', borderRadius: 12, objectFit: 'contain' }}
+          />
+          <button
+            onClick={() => setShowReceipt(false)}
+            style={{ position: 'absolute', top: 20, insetInlineEnd: 20, width: 36, height: 36, borderRadius: '50%', background: 'rgba(255,255,255,0.15)', color: '#fff', border: 'none', fontSize: 18, cursor: 'pointer' }}
+          >
+            ✕
+          </button>
+        </div>
+      )}
+    </>
   );
 }

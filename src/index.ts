@@ -11,7 +11,10 @@ import settlementsRouter from './routes/settlements';
 import authRouter from './routes/auth';
 
 // Apply additive schema changes that may not have been run via CLI
-db.raw('ALTER TABLE events ADD COLUMN IF NOT EXISTS photo_url TEXT')
+Promise.all([
+  db.raw('ALTER TABLE events ADD COLUMN IF NOT EXISTS photo_url TEXT'),
+  db.raw('ALTER TABLE expenses ADD COLUMN IF NOT EXISTS receipt_url TEXT'),
+])
   .then(() => console.log('Schema ready'))
   .catch((err: Error) => console.warn('Schema patch skipped:', err.message));
 

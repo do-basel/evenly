@@ -53,6 +53,7 @@ export default function AddExpense({ lang: _lang, s, dir, inviteCode, event, exp
   const [overrides, setOverrides] = useState<Record<string, string>>(() =>
     expense ? initOverrides(expense) : {}
   );
+  const [receiptPhoto, setReceiptPhoto] = useState<string | null>(expense?.receipt_url ?? null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -103,6 +104,7 @@ export default function AddExpense({ lang: _lang, s, dir, inviteCode, event, exp
         paid_by: paidBy,
         split_type: splitType,
         participants,
+        receipt_url: receiptPhoto ?? undefined,
       };
       if (isEdit && expense) {
         await api.updateExpense(expense.id, membership.memberToken, data);
@@ -266,6 +268,46 @@ export default function AddExpense({ lang: _lang, s, dir, inviteCode, event, exp
             </div>
           );
         })()}
+
+        {/* Receipt photo — optional */}
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--sub)', marginBottom: 10 }}>
+            {dir === 'rtl' ? 'صورة الفاتورة (اختياري)' : 'Receipt photo (optional)'}
+          </div>
+          {receiptPhoto ? (
+            <div style={{ position: 'relative', display: 'inline-block' }}>
+              <img
+                src={receiptPhoto}
+                alt="receipt"
+                style={{ width: '100%', maxHeight: 180, objectFit: 'cover', borderRadius: 'var(--r-card)', border: '1px solid var(--line)' }}
+              />
+              <button
+                onClick={() => setReceiptPhoto(null)}
+                style={{ position: 'absolute', top: 6, insetInlineEnd: 6, width: 26, height: 26, borderRadius: '50%', background: 'rgba(0,0,0,0.55)', color: '#fff', border: 'none', fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              >
+                ✕
+              </button>
+            </div>
+          ) : (
+            <label style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--chip)', border: '1.5px dashed var(--line)', borderRadius: 'var(--r-card)', padding: '14px 16px', cursor: 'pointer', position: 'relative' }}>
+              <span style={{ fontSize: 22 }}>📷</span>
+              <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--sub)' }}>{s.addReceipt}</span>
+              <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                style={{ position: 'absolute', inset: 0, opacity: 0, width: '100%', height: '100%', cursor: 'pointer' }}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (!file || file.size > 5 * 1024 * 1024) return;
+                  const reader = new FileReader();
+                  reader.onload = () => setReceiptPhoto(reader.result as string);
+                  reader.readAsDataURL(file);
+                }}
+              />
+            </label>
+          )}
+        </div>
 
         {error && <div style={{ color: 'var(--negative)', fontSize: 13, fontWeight: 600, marginBottom: 12 }}>{error}</div>}
       </div>

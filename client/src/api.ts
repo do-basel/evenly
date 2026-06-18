@@ -53,6 +53,7 @@ export const api = {
       paid_by: string;
       split_type: string;
       participants: { memberId: string; shareValue: number }[];
+      receipt_url?: string | null;
     }
   ) =>
     req(`/api/events/${inviteCode}/expenses`, {
@@ -70,6 +71,7 @@ export const api = {
       paid_by: string;
       split_type: string;
       participants: { memberId: string; shareValue: number }[];
+      receipt_url?: string | null;
     }
   ) =>
     req(`/api/expenses/${expenseId}`, {
