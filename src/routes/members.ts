@@ -50,6 +50,20 @@ router.post('/', async (req: Request, res: Response) => {
   });
 });
 
+// PATCH /api/events/:inviteCode/members/me — update own photo
+router.patch('/me', requireMemberToken, async (req: Request, res: Response) => {
+  const member = res.locals.member;
+  const event = await db('events').where({ invite_code: req.params.inviteCode }).first();
+  if (!event) { res.status(404).json({ error: 'Event not found' }); return; }
+  if (member.event_id !== event.id) { res.status(403).json({ error: 'غير مصرح' }); return; }
+
+  const { photo_url } = req.body;
+  if (photo_url === undefined) { res.status(400).json({ error: 'photo_url required' }); return; }
+
+  const [updated] = await db('members').where({ id: member.id }).update({ photo_url }).returning(['id', 'name', 'photo_url']);
+  res.json(updated);
+});
+
 // GET /api/events/:inviteCode/me — identify returning device
 router.get('/me', requireMemberToken, async (req: Request, res: Response) => {
   const member = res.locals.member;

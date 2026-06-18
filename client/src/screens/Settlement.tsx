@@ -1,4 +1,6 @@
-import { formatCurrency } from '../storage';
+import { useState } from 'react';
+import { api } from '../api';
+import { getMembership, formatCurrency } from '../storage';
 import type { Event } from '../types';
 import type { Lang, Strings } from '../i18n';
 
@@ -11,9 +13,47 @@ interface Props {
   onBack: () => void;
 }
 
-export default function Settlement({ lang: _lang, s, dir, event, onBack }: Props) {
-  const { settlement, balances, members, currency } = event;
+export default function Settlement({ lang: _lang, s, dir, inviteCode, event, onBack }: Props) {
+  const { settlement, members, currency } = event;
+  const membership = getMembership(inviteCode);
+  const myId = membership?.memberId;
+
   const memberName = (id: string) => members.find((m) => m.id === id)?.name ?? id;
+  const memberPhoto = (id: string) => members.find((m) => m.id === id)?.photo_url ?? null;
+
+  // Only debts where I'm the one paying
+  const myDebts = settlement.filter((p) => p.fromMemberId === myId);
+
+  const [settling, setSettling] = useState<string | null>(null);
+  const [amountStr, setAmountStr] = useState('');
+  const [partial, setPartial] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [settled, setSettled] = useState<Set<string>>(new Set());
+  const [error, setError] = useState('');
+
+  const openSettle = (toId: string, fullCents: number) => {
+    setSettling(toId);
+    setAmountStr((fullCents / 100).toFixed(2));
+    setPartial(false);
+    setError('');
+  };
+
+  const handleSettle = async () => {
+    if (!settling || !membership) return;
+    const cents = Math.round(parseFloat(amountStr || '0') * 100);
+    if (cents <= 0) { setError(dir === 'rtl' ? 'أدخل مبلغاً صحيحاً' : 'Enter a valid amount'); return; }
+    setLoading(true);
+    setError('');
+    try {
+      await api.markSettled(inviteCode, membership.memberToken, settling, cents);
+      setSettled((prev) => new Set([...prev, settling]));
+      setSettling(null);
+    } catch (e: any) {
+      setError(e.message ?? 'حدث خطأ');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div dir={dir} style={{ height: '100%', background: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
@@ -28,48 +68,122 @@ export default function Settlement({ lang: _lang, s, dir, event, onBack }: Props
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
-        <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--sub)', marginBottom: 12 }}>{s.members}</div>
-        {balances.map((b) => (
-          <div key={b.memberId} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--r-card)', padding: '12px 14px', marginBottom: 8 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700 }}>
-                {memberName(b.memberId)[0]}
-              </div>
-              <div style={{ fontSize: 14, fontWeight: 700 }}>{memberName(b.memberId)}</div>
-            </div>
-            <div style={{ fontSize: 15, fontWeight: 800, color: b.netCents >= 0 ? 'var(--positive)' : 'var(--negative)', fontFamily: 'Hanken Grotesk, sans-serif' }}>
-              {b.netCents >= 0 ? '+' : ''}{formatCurrency(b.netCents, currency)}
-            </div>
-          </div>
-        ))}
+        {/* My debts */}
+        <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--sub)', marginBottom: 12 }}>{s.myDebts}</div>
 
-        {settlement.length > 0 && (
-          <>
-            <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--sub)', marginBottom: 12, marginTop: 24 }}>{s.paymentPlan}</div>
-            {settlement.map((p, i) => (
-              <div key={i} style={{ background: '#EEF7F1', border: '1px solid #C5E0CF', borderRadius: 'var(--r-card)', padding: '14px 16px', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 12 }}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>
-                    <span style={{ color: 'var(--negative)', fontWeight: 800 }}>{p.fromName}</span>
-                    <span style={{ color: 'var(--sub)', margin: '0 6px' }}>→</span>
-                    <span style={{ color: 'var(--positive)', fontWeight: 800 }}>{p.toName}</span>
+        {myDebts.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '32px 0', fontSize: 15, fontWeight: 700, color: 'var(--positive)' }}>
+            {s.noDebts}
+          </div>
+        ) : (
+          myDebts.map((p) => {
+            const key = p.toMemberId;
+            const isSettled = settled.has(key);
+            const photo = memberPhoto(p.toMemberId);
+            return (
+              <div key={key} style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--r-card)', padding: '14px 16px', marginBottom: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  {/* Recipient avatar */}
+                  <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, flexShrink: 0, overflow: 'hidden' }}>
+                    {photo
+                      ? <img src={photo} alt={memberName(p.toMemberId)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      : memberName(p.toMemberId)[0]}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 12, color: 'var(--sub)', fontWeight: 600 }}>{s.iOwe}</div>
+                    <div style={{ fontSize: 15, fontWeight: 800 }}>{memberName(p.toMemberId)}</div>
+                  </div>
+                  <div style={{ textAlign: dir === 'rtl' ? 'left' : 'right', flexShrink: 0 }}>
+                    <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--negative)', fontFamily: 'Hanken Grotesk, sans-serif' }}>
+                      {formatCurrency(p.amountCents, currency)}
+                    </div>
                   </div>
                 </div>
-                <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--positive)', fontFamily: 'Hanken Grotesk, sans-serif', flexShrink: 0 }}>
-                  {formatCurrency(p.amountCents, currency)}
+
+                {/* Settle controls */}
+                {isSettled ? (
+                  <div style={{ marginTop: 12, padding: '10px 14px', background: '#EEF7F1', borderRadius: 'var(--r-input)', fontSize: 13, fontWeight: 700, color: 'var(--positive)', textAlign: 'center' }}>
+                    {s.settledSuccess}
+                  </div>
+                ) : settling === key ? (
+                  <div style={{ marginTop: 12 }}>
+                    {/* Full / Partial toggle */}
+                    <div style={{ display: 'flex', gap: 8, background: 'var(--chip)', borderRadius: 'var(--r-pill)', padding: 3, marginBottom: 10 }}>
+                      <button
+                        onClick={() => { setPartial(false); setAmountStr((p.amountCents / 100).toFixed(2)); }}
+                        style={{ flex: 1, padding: '9px 0', borderRadius: 'var(--r-pill)', fontWeight: 700, fontSize: 12.5, border: 'none', cursor: 'pointer', fontFamily: 'var(--font-body)', background: !partial ? 'var(--accent)' : 'transparent', color: !partial ? '#fff' : 'var(--ink)' }}
+                      >
+                        {s.fullAmount}
+                      </button>
+                      <button
+                        onClick={() => { setPartial(true); setAmountStr(''); }}
+                        style={{ flex: 1, padding: '9px 0', borderRadius: 'var(--r-pill)', fontWeight: 700, fontSize: 12.5, border: 'none', cursor: 'pointer', fontFamily: 'var(--font-body)', background: partial ? 'var(--accent)' : 'transparent', color: partial ? '#fff' : 'var(--ink)' }}
+                      >
+                        {s.partialAmount}
+                      </button>
+                    </div>
+
+                    <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--sub)', marginBottom: 6 }}>{s.amountToPay} ({currency})</div>
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      value={amountStr}
+                      onChange={(e) => setAmountStr(e.target.value)}
+                      style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--line)', borderRadius: 'var(--r-input)', padding: '11px 14px', fontSize: 16, fontWeight: 700, color: 'var(--ink)', outline: 'none', direction: 'ltr', textAlign: 'left', marginBottom: 8, fontFamily: 'Hanken Grotesk, sans-serif' }}
+                    />
+                    {error && <div style={{ color: 'var(--negative)', fontSize: 12, fontWeight: 600, marginBottom: 8 }}>{error}</div>}
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button
+                        onClick={() => { setSettling(null); setError(''); }}
+                        style={{ flex: 1, height: 42, borderRadius: 'var(--r-btn)', background: 'var(--chip)', border: '1px solid var(--line)', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-body)', color: 'var(--ink)' }}
+                      >
+                        {s.cancel}
+                      </button>
+                      <button
+                        onClick={handleSettle}
+                        disabled={loading}
+                        style={{ flex: 2, height: 42, borderRadius: 'var(--r-btn)', background: loading ? 'var(--sub)' : 'var(--positive)', border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-body)', color: '#fff' }}
+                      >
+                        {loading ? s.settling : s.confirm}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => openSettle(key, p.amountCents)}
+                    style={{ marginTop: 12, width: '100%', height: 40, borderRadius: 'var(--r-btn)', background: 'var(--accent)', color: '#fff', border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-body)' }}
+                  >
+                    {s.settleBtn}
+                  </button>
+                )}
+              </div>
+            );
+          })
+        )}
+
+        {/* All balances summary */}
+        {event.balances.length > 0 && (
+          <>
+            <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--sub)', marginBottom: 12, marginTop: 28 }}>{s.members}</div>
+            {event.balances.map((b) => (
+              <div key={b.memberId} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--r-card)', padding: '12px 14px', marginBottom: 8 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, overflow: 'hidden' }}>
+                    {memberPhoto(b.memberId)
+                      ? <img src={memberPhoto(b.memberId)!} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      : memberName(b.memberId)[0]}
+                  </div>
+                  <div style={{ fontSize: 14, fontWeight: 700 }}>{memberName(b.memberId)}{b.memberId === myId && <span style={{ fontSize: 11, color: 'var(--sub)', marginRight: 5 }}> (أنت)</span>}</div>
+                </div>
+                <div style={{ fontSize: 15, fontWeight: 800, color: b.netCents >= 0 ? 'var(--positive)' : 'var(--negative)', fontFamily: 'Hanken Grotesk, sans-serif' }}>
+                  {b.netCents >= 0 ? '+' : ''}{formatCurrency(b.netCents, currency)}
                 </div>
               </div>
             ))}
           </>
         )}
 
-        {settlement.length === 0 && balances.length > 0 && (
-          <div style={{ textAlign: 'center', padding: '24px 0', fontSize: 14, fontWeight: 600, color: 'var(--positive)' }}>
-            {s.allEven}
-          </div>
-        )}
-
-        {balances.length === 0 && (
+        {event.balances.length === 0 && (
           <div style={{ textAlign: 'center', padding: '48px 0', color: 'var(--sub)', fontSize: 14, fontWeight: 600 }}>
             <div style={{ fontSize: 40, marginBottom: 10 }}>🧾</div>
             {s.noExpenses}

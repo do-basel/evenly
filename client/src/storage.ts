@@ -72,7 +72,7 @@ export function clearProfile(): void {
 
 export function formatCurrency(cents: number, currency: string): string {
   const amount = Math.abs(cents) / 100;
-  const formatted = amount.toLocaleString('ar-SA', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const formatted = amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const symbols: Record<string, string> = { SAR: 'ر.س', USD: '$', EUR: '€' };
   return `${formatted} ${symbols[currency] ?? currency}`;
 }

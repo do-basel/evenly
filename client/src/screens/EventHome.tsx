@@ -28,14 +28,33 @@ function Avatar({ name, photo, size = 36 }: { name: string; photo?: string | nul
 export default function EventHome({ lang: _lang, s, dir, inviteCode, onBack, onAddExpense, onSettlement, onTripSettings }: Props) {
   const [event, setEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState(true);
-  const [deleting, setDeleting] = useState<string | null>(null);
   const [copiedLink, setCopiedLink] = useState(false);
   const membership = getMembership(inviteCode);
+  const [myPhoto, setMyPhoto] = useState<string | null>(null);
+
+  const handleMyPhotoChange = async (file: File) => {
+    if (!membership) return;
+    if (file.size > 2 * 1024 * 1024) return;
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const dataUrl = reader.result as string;
+      try {
+        await api.updateMemberPhoto(inviteCode, membership.memberToken, dataUrl);
+        setMyPhoto(dataUrl);
+      } catch { /* ignore */ }
+    };
+    reader.readAsDataURL(file);
+  };
 
   const load = useCallback(async () => {
     try {
       const e = await api.getEvent(inviteCode) as Event;
       setEvent(e);
+      // Seed my photo from member list
+      if (membership) {
+        const me = e.members.find((m) => m.id === membership.memberId);
+        if (me?.photo_url) setMyPhoto(me.photo_url);
+      }
       // Sync trip photo to localStorage so MyTrips can display it
       if (e.photo_url !== undefined) {
         const all = getMemberships();
@@ -50,15 +69,6 @@ export default function EventHome({ lang: _lang, s, dir, inviteCode, onBack, onA
 
   useEffect(() => { load(); }, [load]);
 
-  const handleDelete = async (expenseId: string) => {
-    if (!membership) return;
-    setDeleting(expenseId);
-    try {
-      await api.deleteExpense(inviteCode, expenseId, membership.memberToken);
-      await load();
-    } catch { /* ignore */ }
-    finally { setDeleting(null); }
-  };
 
   const memberName = (id: string) => event?.members.find((m) => m.id === id)?.name ?? '؟';
   const myBalance = event?.balances.find((b) => b.memberId === membership?.memberId);
@@ -113,6 +123,15 @@ export default function EventHome({ lang: _lang, s, dir, inviteCode, onBack, onA
               ⚙
             </button>
           )}
+          {/* My avatar — tap to change photo */}
+          {membership && (
+            <label style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, flexShrink: 0, overflow: 'hidden', cursor: 'pointer', position: 'relative' }}>
+              {myPhoto
+                ? <img src={myPhoto} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                : membership.memberName?.[0] ?? '؟'}
+              <input type="file" accept="image/*" style={{ position: 'absolute', inset: 0, opacity: 0, width: '100%', height: '100%', cursor: 'pointer' }} onChange={(e) => { const f = e.target.files?.[0]; if (f) handleMyPhotoChange(f); }} />
+            </label>
+          )}
         </div>
 
         {myBalance && (
@@ -162,8 +181,6 @@ export default function EventHome({ lang: _lang, s, dir, inviteCode, onBack, onA
               currency={event.currency}
               memberName={memberName}
               myMemberId={myId}
-              onDelete={() => handleDelete(expense.id)}
-              deleting={deleting === expense.id}
               s={s}
             />
           ));
@@ -189,16 +206,13 @@ export default function EventHome({ lang: _lang, s, dir, inviteCode, onBack, onA
   );
 }
 
-function ExpenseCard({ expense, currency, memberName, myMemberId, onDelete, deleting, s }: {
+function ExpenseCard({ expense, currency, memberName, myMemberId, s }: {
   expense: ExpenseWithSplits;
   currency: string;
   memberName: (id: string) => string;
   myMemberId?: string;
-  onDelete: () => void;
-  deleting: boolean;
   s: Strings;
 }) {
-  const isOwner = expense.created_by === myMemberId;
   const mySplit = expense.splits.find((sp) => sp.member_id === myMemberId);
 
   return (
@@ -221,15 +235,6 @@ function ExpenseCard({ expense, currency, memberName, myMemberId, onDelete, dele
           )}
         </div>
       </div>
-      {isOwner && (
-        <button
-          onClick={onDelete}
-          disabled={deleting}
-          style={{ marginTop: 10, fontSize: 12, fontWeight: 700, color: 'var(--negative)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-body)', padding: 0 }}
-        >
-          {deleting ? s.deleting : s.delete}
-        </button>
-      )}
     </div>
   );
 }
