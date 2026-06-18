@@ -15,7 +15,7 @@ import type { Lang } from './i18n';
 import type { Event } from './types';
 
 export type Screen =
-  | { name: 'auth' }
+  | { name: 'auth'; pendingInvite?: string }
   | { name: 'trips' }
   | { name: 'create' }
   | { name: 'sharelink'; inviteCode: string; eventName: string }
@@ -29,7 +29,10 @@ export type Screen =
 function detectInitialScreen(): Screen {
   const path = window.location.pathname;
   const match = path.match(/^\/j\/([^/]+)/);
-  if (match) return { name: 'join', inviteCode: match[1] };
+  if (match) {
+    if (getAuth()) return { name: 'join', inviteCode: match[1] };
+    return { name: 'auth', pendingInvite: match[1] };
+  }
   return getAuth() ? { name: 'trips' } : { name: 'auth' };
 }
 
@@ -53,7 +56,12 @@ export default function App() {
 
   switch (screen.name) {
     case 'auth':
-      return <AuthScreen lang={lang} s={s} onDone={() => go({ name: 'trips' })} />;
+      return <AuthScreen
+        lang={lang} s={s}
+        onDone={() => screen.pendingInvite
+          ? go({ name: 'join', inviteCode: screen.pendingInvite })
+          : go({ name: 'trips' })}
+      />;
 
     case 'trips':
       return (
