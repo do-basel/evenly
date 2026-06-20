@@ -68,7 +68,8 @@ router.get('/:inviteCode', async (req: Request, res: Response) => {
   if (expenses.length && splits.length) {
     try {
       balances = computeBalances(expenses, splits);
-      settlement = computeDirectDebts(expenses, splits);
+      const settlementsRecords = await db('settlements').where({ event_id: event.id });
+      settlement = computeDirectDebts(expenses, splits, settlementsRecords);
     } catch (_) {
       // return empty if invariant fails (e.g. partial data)
     }

@@ -23,7 +23,8 @@ router.get('/', async (req: Request, res: Response) => {
   const nameMap: Record<string, string> = {};
   for (const m of members) nameMap[m.id] = m.name;
 
-  const payments = computeDirectDebts(expenses, splits);
+  const settlementsRecords = await db('settlements').where({ event_id: event.id });
+  const payments = computeDirectDebts(expenses, splits, settlementsRecords);
 
   res.json(
     payments.map((p) => ({
